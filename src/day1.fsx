@@ -5,26 +5,35 @@
 open Common
 open Expecto
 
-let parse (input: string) = input.Split '\n' |> Seq.map int
+let calories input =
+    let groups = blankLines input
+    Seq.map (Seq.map int) groups |> Seq.map Seq.sum
 
-let part1 list =
 
-    let combinations =
-        seq {
-            for i in list do
-                for j in list do
-                    if i + j = 2022 then
-                        yield (i * j)
-        }
+let part1 input =
+    let calories = calories input
+    Seq.max calories
 
-    Seq.head combinations
+
+let part2 input =
+    let calories = calories input
+
+    let sorted = Seq.sort calories |> Seq.rev
+
+    Seq.sum (Seq.take 3 sorted)
+
 
 let tests =
     testList
         "parts"
         [ test "part 1" {
               let subject = part1 Day1.data
-              Expect.equal subject 793524 ""
+              Expect.equal subject 69912 ""
+          }
+
+          test "part 2" {
+              let subject = part2 Day1.data
+              Expect.equal subject 208180 ""
           }
 
           ]
