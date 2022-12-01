@@ -30,11 +30,7 @@ let reversedBlankLines (i: string) =
 
     last :: groups
 
-let blankLines (i: string) =
-    i
-    |> reversedBlankLines
-    |> List.map List.rev
-    |> List.rev
+let blankLines (i: string) = i.Split "\n\n" |> Seq.map lines
 
 let commas (i: string) = i.Split ','
 
@@ -64,10 +60,7 @@ let extractValues regex str =
     let attempt = Regex(regex).Match str
 
     if attempt.Success then
-        attempt.Groups
-        |> Seq.map (fun x -> x.Value)
-        |> Seq.skip 1
-        |> Some
+        attempt.Groups |> Seq.map (fun x -> x.Value) |> Seq.skip 1 |> Some
     else
         None
 
@@ -75,9 +68,6 @@ let extractNamedValues regex str =
     let attempt = Regex(regex).Match str
 
     if attempt.Success then
-        attempt.Groups
-        |> Seq.map (fun x -> x.Name, x.Value)
-        |> Seq.skip 1
-        |> Some
+        attempt.Groups |> Seq.map (fun x -> x.Name, x.Value) |> Seq.skip 1 |> Some
     else
         None

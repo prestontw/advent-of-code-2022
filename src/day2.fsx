@@ -1,22 +1,22 @@
 #load "Common.fsx"
-#load "../data/day1.fsx"
+#load "../data/day2.fsx"
 #r "nuget: Expecto"
 
 open Common
 open Expecto
 
-let calories input =
+let parse input =
     let groups = blankLines input
-    Seq.map (Seq.map int) groups |> Seq.map Seq.sum
+    Seq.map (Seq.map double) groups |> Seq.map Seq.sum
 
 
 let part1 input =
-    let calories = calories input
+    let calories = parse input
     Seq.max calories
 
 
 let part2 input =
-    let calories = calories input
+    let calories = parse input
 
     let sorted = Seq.sort calories |> Seq.rev
 
@@ -27,14 +27,11 @@ let tests =
     testList
         "parts"
         [ test "part 1" {
-              let subject = part1 Day1.data
+              let subject = part1 Day2.data
               Expect.equal subject 69912 ""
           }
 
-          test "part 2" {
-              let subject = part2 Day1.data
-              Expect.equal subject 208180 ""
-          }
+
 
           ]
 
