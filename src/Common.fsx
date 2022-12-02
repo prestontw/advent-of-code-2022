@@ -10,6 +10,8 @@ let values m = m |> Map.values
 
 let counts (s: seq<'a>) : Map<'a, int> = Seq.countBy id s |> Map.ofSeq
 
+let split (s: string) (by: string) = s.Split by
+
 let digits (i: int) =
     i |> string |> Seq.map (fun i -> int i - int '0')
 
