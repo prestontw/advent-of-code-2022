@@ -5,14 +5,19 @@
 open Common
 open Expecto
 
+let line = "(\d+)-(\d+),(\d+)-(\d+)"
+let matchLine = Common.extractValues line
+
 let parse input =
     let lines = input |> lines
 
     let parseLine line =
-        let [| fElf; sElf |] = commas line
-        let [| lower; upper |] = fElf.Split '-'
-        let [| lower2; upper2 |] = sElf.Split '-'
-        (int lower, int upper), (int lower2, int upper2)
+        line
+        |> matchLine
+        |> Option.get
+        |> Seq.map int
+        |> Seq.toArray
+        |> (fun [| l1; u1; l2; u2 |] -> (l1, u1), (l2, u2))
 
     Seq.map (parseLine) lines
 
