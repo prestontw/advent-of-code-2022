@@ -73,3 +73,7 @@ let extractNamedValues regex str =
         attempt.Groups |> Seq.map (fun x -> x.Name, x.Value) |> Seq.skip 1 |> Some
     else
         None
+
+let tee a =
+    printfn "%A" a
+    a
