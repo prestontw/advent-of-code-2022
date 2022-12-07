@@ -18,21 +18,18 @@ and Directory = { Children: Map<string, FileEntries> }
 let newFiles = (Directory { Children = Map [] })
 let newDirectory = { Children = Map [] }
 
-// this isn't doing what I would expect it to do
-let sizes fs =
+let rec directoryAndInnerSizes fs path sizes =
+    let folder (size, innerSizes) name entry =
+        match entry with
+        | File s -> (size + s, innerSizes)
+        | Directory d ->
+            let (innerSize, childrenSizes) =
+                directoryAndInnerSizes d (path + "/" + name) innerSizes
 
-    let rec inner dir (prefix: string) (sizes: Map<string, int>) =
-        let folder (acc) name child =
-            match child with
-            | File size -> (acc + size, sizes)
-            | Directory d ->
-                let newPrefix = (prefix + "/" + name)
-                let size, newSizes = inner d newPrefix sizes
-                (acc, newSizes |> Map.add newPrefix size)
+            (innerSize + size, childrenSizes)
 
-        Map.fold folder (0, (Map [])) dir.Children
-
-    inner fs "/" (Map []) |> snd
+    let (size, innerSizes) = fs.Children |> Map.fold folder (0, sizes)
+    (size, innerSizes |> Map.add path size)
 
 let part1 input =
     let lines = parse input
@@ -60,4 +57,22 @@ let part1 input =
         | [] -> tree, []
 
     let fileSystem, [] = traverse newDirectory (lines |> Seq.toList)
-    fileSystem
+    let _totalSize, dirsAndSizes = directoryAndInnerSizes fileSystem "/" (Map [])
+
+    dirsAndSizes
+    |> Map.toSeq
+    |> Seq.map snd
+    |> Seq.filter (fun size -> size < 100000)
+    |> Seq.sum
+
+let tests =
+    testList
+        "parts"
+        [ test "part 1" {
+              let subject = part1 Day7.data
+              Expect.equal subject 0 ""
+          }
+
+          ]
+
+let main = runTestsWithCLIArgs [] [||] tests
