@@ -17,18 +17,26 @@ and Directory = { Children: Map<string, FileEntries> }
 
 let newDirectory = { Children = Map [] }
 
-let rec directoryAndInnerSizes fs path sizes =
-    let folder (size, innerSizes) name entry =
-        match entry with
-        | File s -> (size + s, innerSizes)
-        | Directory d ->
-            let (innerSize, childrenSizes) =
-                directoryAndInnerSizes d (path + "/" + name) innerSizes
+let directorySizes fs root =
+    let rec directoryAndInnerSizes fs path sizes =
+        let folder (size, innerSizes) name entry =
+            match entry with
+            | File s -> (size + s, innerSizes)
+            | Directory d ->
+                let (innerSize, childrenSizes) =
+                    directoryAndInnerSizes d (path + name + "/") innerSizes
 
-            (innerSize + size, childrenSizes)
+                (innerSize + size, childrenSizes)
 
-    let (size, innerSizes) = fs.Children |> Map.fold folder (0, sizes)
-    (size, innerSizes |> Map.add path size)
+        let (size, innerSizes) = fs.Children |> Map.fold folder (0, sizes)
+        (size, innerSizes |> Map.add path size)
+
+    let rootEntry = fs.Children[root]
+
+    match rootEntry with
+    | File i -> i, (Map [])
+    | Directory d -> directoryAndInnerSizes d root (Map [])
+
 
 let sizes input =
     let lines = parse input
@@ -56,7 +64,7 @@ let sizes input =
         | [] -> tree, []
 
     let fileSystem, [] = traverse newDirectory (lines |> Seq.toList)
-    let filledSize, dirsAndSizes = directoryAndInnerSizes fileSystem "/" (Map [])
+    let filledSize, dirsAndSizes = directorySizes fileSystem "/"
 
 
     (filledSize, dirsAndSizes |> Map.toSeq |> Seq.map snd)
