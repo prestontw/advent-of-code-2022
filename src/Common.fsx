@@ -77,3 +77,6 @@ let extractNamedValues regex str =
 let tee a =
     printfn "%A" a
     a
+
+let cardinalNeighbors (x, y) =
+    [ x + 1, y; x - 1, y; x, y - 1; x, y + 1 ]
