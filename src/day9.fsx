@@ -15,10 +15,10 @@ let parse input =
 let areAdjacent (x1, y1) (x2, y2) =
     (absDiff x1 x2) <= 1 && (absDiff y1 y2) <= 1
 
-let rec next head tail dir amount tailVisited =
+let rec next positions dir amount tailVisited =
 
     if amount = 0 then
-        head, tail, tailVisited
+        positions, tailVisited
     else
         let headX, headY = head
 
@@ -61,19 +61,19 @@ let tests =
               Expect.equal subject 6486 ""
           }
 
-          test "part 2" {
+          test "sample 2" {
               let subject =
                   part1
-                      "R 4
-U 4
-L 3
-D 1
-R 4
-D 1
-L 5
-R 2"
+                      "R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20"
 
-              Expect.equal subject 13 ""
+              Expect.equal subject 36 ""
           }
 
           ]
