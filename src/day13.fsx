@@ -82,15 +82,26 @@ let rec lLessThanR lPacket rPacket =
 
 let part1 input =
     let packetPairs = parse input
+    let twoDivider = PList[PList[Int 2]]
+    let sixDivider = PList[PList[Int 6]]
 
-    packetPairs
-    |> Seq.indexed
-    |> Seq.choose (fun (i, (l, r)) ->
-        if (lLessThanR l r |> Option.defaultValue false) then
-            Some(i + 1)
-        else
-            None)
-    |> Seq.sum
+    let withDividers =
+        packetPairs
+        |> Seq.collect (fun (l, r) -> [ l; r ])
+        |> Seq.append [ twoDivider; sixDivider ]
+
+    let sorted =
+        withDividers
+        |> Seq.sortWith (fun l r ->
+            match lLessThanR l r with
+            | Some true -> -1
+            | Some false -> 1
+            | None -> 0)
+
+    let twoIndex = sorted |> Seq.findIndex (fun p -> p = twoDivider) |> ((+) 1)
+    let sixIndex = sorted |> Seq.findIndex (fun p -> p = sixDivider) |> ((+) 1)
+
+    twoIndex * sixIndex
 
 let tests =
     testList
