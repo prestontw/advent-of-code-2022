@@ -17,7 +17,12 @@ let rec parsePacket (line: string) =
     else
         match System.Int32.TryParse line with
         | true, i -> Int i
-        | _ -> line |> commas |> Seq.map parsePacket |> Seq.toList |> List
+        | _ ->
+            let segment = line.IndexOf ']'
+
+            match segment with
+            | -1 -> line |> commas |> Seq.map parsePacket |> Seq.toList |> List
+            | endOfSegment -> line[.. endOfSegment - 1] |> commas |> Seq.map parsePacket |> Seq.toList |> List
 
 let parse input =
     let lines = input |> blankLines
