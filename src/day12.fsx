@@ -35,10 +35,10 @@ let parse input =
 
     (instructions, start, dest)
 
-let aStar board start dest =
+let aStar board starts dest =
     let openSet = System.Collections.Generic.PriorityQueue()
-    openSet.Enqueue(start, 0)
-    let costs = Map [ start, 0 ]
+    starts |> Seq.iter (fun t -> openSet.Enqueue(t, 0))
+    let costs = Map(starts |> Seq.map (fun pos -> pos, 0))
 
     let estimate (x, y) =
         let destX, destY = dest
@@ -86,16 +86,15 @@ let aStar board start dest =
 let part1 input =
     let lines, start, dest = parse input
 
-    aStar lines start dest |> Option.get
+    aStar lines [ start ] dest |> Option.get
 
 let part2 input =
     let lines, _, dest = parse input
 
-    lines
-    |> Map.toSeq
-    |> Seq.filter (fun t -> (snd t) = 0)
-    |> Seq.choose (fun t -> aStar lines (fst t) dest)
-    |> Seq.min
+    let potentialOrigins =
+        lines |> Map.toSeq |> Seq.filter (fun t -> (snd t) = 0) |> Seq.map fst
+
+    aStar lines potentialOrigins dest
 
 let tests =
     testList
@@ -121,7 +120,7 @@ abdefghi"
 
           test "part 2" {
               let subject = part2 Day12.data
-              Expect.equal subject 363 ""
+              Expect.equal subject (Some 363) ""
           }
 
           ]
