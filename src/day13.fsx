@@ -9,30 +9,15 @@ type Packet =
     | Int of int
     | List of Packet list
 
-let parsePacket (line: string) =
-    let rec inner soFar (pending: string option) remaining =
-        if remaining = "" then
-            soFar, ""
-        else
-            match remaining[0] with
-            | ']'
-            | ',' ->
-                match pending with
-                | None -> (List soFar), remaining[1..]
-                | Some i -> soFar :: Int(int i), remaining[1..]
-            | '[' ->
-                let innerList, remaining = inner [] None remaining[1..]
-                soFar :: innerList, remaining
-            | d ->
-                inner
-                    soFar
-                    (pending
-                     |> Option.map (fun existing -> existing + string d)
-                     |> Option.defaultValue (string d))
-                    remaining[1..]
-
-    inner (List []) None line
-
+let rec parsePacket (line: string) =
+    if line = "[]" then
+        List []
+    else if line[0] = '[' then
+        parsePacket line[1 .. (line.Length - 2)]
+    else
+        match System.Int32.TryParse line with
+        | true, i -> Int i
+        | _ -> line |> commas |> Seq.map parsePacket |> Seq.toList |> List
 
 let parse input =
     let lines = input |> blankLines
