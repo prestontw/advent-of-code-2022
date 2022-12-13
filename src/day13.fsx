@@ -5,24 +5,52 @@
 open Common
 open Expecto
 
+type SExpr =
+    | Word of string
+    | Sentence of SExpr list
+
 type Packet =
     | Int of int
-    | List of Packet list
+    | PList of Packet list
 
-let rec parsePacket (line: string) =
-    if line = "[]" then
-        List []
-    else if line[0] = '[' then
-        parsePacket line[1 .. (line.Length - 2)]
-    else
-        match System.Int32.TryParse line with
-        | true, i -> Int i
-        | _ ->
-            let segment = line.IndexOf ']'
+let parsePacket (line: string) =
+    let rec inner (sentence: SExpr list) (pendingWord: string option) (remaining: string) =
+        if remaining = "" then
 
-            match segment with
-            | -1 -> line |> commas |> Seq.map parsePacket |> Seq.toList |> List
-            | endOfSegment -> line[.. endOfSegment - 1] |> commas |> Seq.map parsePacket |> Seq.toList |> List
+            Sentence sentence, ""
+        else
+            let tail = remaining[1..]
+
+            match remaining[0] with
+            | '[' ->
+                let innerSentence, tail = inner [] None tail
+                let sentence = List.append sentence [ innerSentence ]
+                inner sentence None tail
+            | ']' ->
+                let sentence =
+                    match pendingWord with
+                    | Some s -> List.append sentence [ Word s ]
+                    | None -> sentence
+
+                (Sentence sentence), tail
+            | ',' ->
+                inner
+                    (List.append
+                        sentence
+                        (pendingWord |> Option.map (fun word -> [ Word word ]) |> Option.defaultValue []))
+                    None
+                    tail
+            | c ->
+                inner
+                    sentence
+                    (pendingWord
+                     |> Option.map (fun existing -> existing + string c)
+                     |> Option.orElse (Some(string c)))
+                    tail
+
+    // take off the first '[' because we start with a list already
+    inner [] None line[1..]
+
 
 let parse input =
     let lines = input |> blankLines
