@@ -35,13 +35,14 @@ let draw walls =
     |> Seq.fold (fun grid wall -> wall |> Seq.windowed 2 |> Seq.fold folder grid) (Map [])
 
 let rec fall (x, y) grid bottom =
-    if y >= bottom then
-        true, grid
+    // look below
+    if y = bottom then
+        false, Map.add (x, y) Sand grid
     else
-        // look below
         match
             (grid |> Map.tryFind (x, y + 1)), (grid |> Map.tryFind (x - 1, y + 1)), (grid |> Map.tryFind (x + 1, y + 1))
         with
+        | Some _, Some _, Some _ when x = 500 && y = 0 -> true, grid
         | Some _, Some _, Some _ -> false, Map.add (x, y) Sand grid
         | None, _, _ -> fall (x, y + 1) grid bottom
         | Some _, None, _ -> fall (x - 1, y + 1) grid bottom
@@ -50,12 +51,14 @@ let rec fall (x, y) grid bottom =
 
 let part1 input =
     let grid = input |> parse |> draw
+    let highestY = grid |> Map.toSeq |> Seq.map (fst >> snd) |> Seq.max
+    let floor = highestY + 1
 
     let rec findFallForever grid count =
-        let slipping, grid = fall (500, 0) grid 10000
+        let slipping, grid = fall (500, 0) grid floor
         if slipping then count else findFallForever grid (count + 1)
 
-    findFallForever grid 0
+    findFallForever grid 1
 
 let tests =
     testList
