@@ -30,7 +30,7 @@ type Cell =
     | Sensor
     | NotBeacon
 
-let part1a input =
+let part1a input yCoord =
     let lines = parse input
 
     let folder (grid: Map<_, _>) (sensor, beacon) =
@@ -40,9 +40,10 @@ let part1a input =
         let positions =
             seq {
                 for x in (sensorX - distance - 1) .. (sensorX + distance + 1) do
-                    for y in (sensorY - distance - 1) .. (sensorY + distance + 1) do
-                        if manhattanPoints (x, y) sensor <= distance then
-                            yield (x, y)
+                    let y = yCoord
+
+                    if manhattanPoints (x, y) sensor <= distance then
+                        yield (x, y)
             }
 
         let grid =
@@ -66,7 +67,7 @@ let part1b p1YCoord s =
     |> Seq.filter (fun ((_, y), cell) -> y = p1YCoord && cell = NotBeacon)
     |> Seq.length
 
-let part1 input ycoord = part1a input |> part1b ycoord
+let part1 input ycoord = part1a input ycoord |> part1b ycoord
 
 let sample =
     "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
@@ -89,10 +90,10 @@ let tests =
         "parts"
         [
 
-          //   test "part 1" {
-          //       let subject = part1 Day15.data p1YCoord
-          //       Expect.equal subject 1 ""
-          //   }
+          test "part 1" {
+              let subject = part1 Day15.data p1YCoord
+              Expect.equal subject 1 ""
+          }
 
           test "sample" {
               let subject = part1 sample 10
