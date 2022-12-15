@@ -30,17 +30,15 @@ type Cell =
     | Sensor
     | NotBeacon
 
-let incrementOrOne (dict: System.Collections.Generic.Dictionary<_, _>) key =
-    if dict.ContainsKey(key) then
+let incrementOrOne (dict: int[]) key =
+    if key >= 0 && key < 4000000 then
         dict[key] <- dict[key] + 1
-    else
-        dict.Add(key, 1)
 
 
 let part1a input yCoord =
     let lines = parse input
-    let xCounts = System.Collections.Generic.Dictionary()
-    let yCounts = System.Collections.Generic.Dictionary()
+    let xCounts = Array.init 4000000 (fun _ -> 0)
+    let yCounts = Array.init 4000000 (fun _ -> 0)
 
     let folder (grid: Map<_, _>) (sensor, beacon) =
         let distance = manhattanPoints sensor beacon
@@ -92,15 +90,9 @@ let part1a input yCoord =
 let part1 input ycoord =
     let _, xCounts, yCounts = part1a input ycoord
 
-    let x =
-        xCounts
-        |> Seq.find (fun (KeyValue(k, v)) -> v = 4000000)
-        |> (fun (KeyValue(k, v)) -> k)
+    let x = xCounts |> Array.findIndex ((=) 4000000)
 
-    let y =
-        yCounts
-        |> Seq.find (fun (KeyValue(k, v)) -> v = 4000000)
-        |> (fun (KeyValue(k, v)) -> k)
+    let y = yCounts |> Array.findIndex ((=) 4000000)
 
     x * 4000000 + y
 
