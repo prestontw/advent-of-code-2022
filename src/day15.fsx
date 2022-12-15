@@ -30,8 +30,17 @@ type Cell =
     | Sensor
     | NotBeacon
 
+let incrementOrOne (dict: System.Collections.Generic.Dictionary<_, _>) key =
+    if dict.ContainsKey(key) then
+        dict[key] <- dict[key] + 1
+    else
+        dict.Add(key, 1)
+
+
 let part1a input yCoord =
     let lines = parse input
+    let xCounts = System.Collections.Generic.Dictionary()
+    let yCounts = System.Collections.Generic.Dictionary()
 
     let folder (grid: Map<_, _>) (sensor, beacon) =
         let distance = manhattanPoints sensor beacon
@@ -50,39 +59,48 @@ let part1a input yCoord =
             |> Seq.fold
                 (fun grid pos ->
                     match grid |> Map.tryFind pos with
-                    | None -> grid |> Map.add pos NotBeacon
+                    | None ->
+                        let ret = grid |> Map.add pos NotBeacon
+                        let (x, y) = pos
+
+                        incrementOrOne xCounts x
+
+                        incrementOrOne yCounts y
+
+                        ret
                     | Some _ -> grid)
                 grid
+
+        if grid |> Map.tryFind sensor |> Option.isNone then
+            let x, y = sensor
+            incrementOrOne xCounts x
+            incrementOrOne yCounts y
+
+        if grid |> Map.tryFind beacon |> Option.isNone then
+            let x, y = beacon
+            incrementOrOne xCounts x
+            incrementOrOne yCounts y
 
         let grid = grid |> Map.add sensor Sensor
         grid |> Map.add beacon Beacon
 
     let grid = lines |> Seq.fold folder (Map [])
 
-    grid
+    grid, xCounts, yCounts
 
 
 let part1 input ycoord =
-    let grid = part1a input ycoord
+    let _, xCounts, yCounts = part1a input ycoord
 
-    let xPositions = Array.Parallel.init 4000000 id
+    let x =
+        xCounts
+        |> Seq.find (fun (KeyValue(k, v)) -> v = 4000000)
+        |> (fun (KeyValue(k, v)) -> k)
 
-    let candidates =
-        xPositions
-        |> Array.Parallel.collect (fun x ->
-            let ys = seq { 0..4000000 }
-
-            ys
-            |> Seq.map (fun y -> x, y)
-            |> Seq.choose (fun (x, y) ->
-                let found = grid |> Map.tryFind (x, y)
-
-                match found with
-                | Some _ -> None
-                | None -> Some(x, y))
-            |> Seq.toArray)
-
-    let x, y = candidates[0]
+    let y =
+        yCounts
+        |> Seq.find (fun (KeyValue(k, v)) -> v = 4000000)
+        |> (fun (KeyValue(k, v)) -> k)
 
     x * 4000000 + y
 
