@@ -1,6 +1,7 @@
 open System.Text.RegularExpressions
 
-let manhattanDistance (x, y) = abs x + abs y
+let manhattanDistance x y = abs x + abs y
+let manhattanPoints (x1, y1) (x2, y2) = manhattanDistance (x1 - x2) (y1 - y2)
 
 let absDiff x y = (max x y) - (min x y)
 

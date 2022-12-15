@@ -25,10 +25,45 @@ let parse input =
 
 let p1YCoord = 2000000
 
+type Cell =
+    | Beacon
+    | Sensor
+    | NotBeacon
+
 let part1 input =
     let lines = parse input
 
-    1
+    let folder (grid: Map<_, _>) (sensor, beacon) =
+        let distance = manhattanPoints sensor beacon
+        let (sensorX, sensorY) = sensor
+
+        let positions =
+            seq {
+                for x in (sensorX - distance) .. (sensorX + distance) do
+                    for y in (sensorY - distance) .. (sensorY + distance) do
+                        if manhattanPoints (x, y) sensor < distance then
+                            yield (x, y)
+            }
+
+        let grid =
+            positions
+            |> Seq.fold
+                (fun grid pos ->
+                    match grid |> Map.tryFind pos with
+                    | None when (manhattanPoints sensor pos) < distance -> grid |> Map.add pos NotBeacon
+                    | None
+                    | Some _ -> grid)
+                grid
+
+        let grid = grid |> Map.add sensor Sensor
+        grid |> Map.add beacon Beacon
+
+    let grid = lines |> Seq.fold folder (Map [])
+
+    grid
+    |> Map.toSeq
+    |> Seq.filter (fun ((_, y), cell) -> y = p1YCoord && cell = NotBeacon)
+    |> Seq.length
 
 let tests =
     testList
