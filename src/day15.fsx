@@ -65,15 +65,24 @@ let part1a input yCoord =
 let part1 input ycoord =
     let grid = part1a input ycoord
 
-    let positions =
-        seq {
-            for x in 0..4000000 do
-                for y in 0..4000000 do
-                    yield (x, y)
-        }
+    let xPositions = Array.Parallel.init 4000000 id
 
-    let x, y =
-        positions |> Seq.find (fun pos -> grid |> Map.tryFind pos |> Option.isNone)
+    let candidates =
+        xPositions
+        |> Array.Parallel.collect (fun x ->
+            let ys = seq { 0..4000000 }
+
+            ys
+            |> Seq.map (fun y -> x, y)
+            |> Seq.choose (fun (x, y) ->
+                let found = grid |> Map.tryFind (x, y)
+
+                match found with
+                | Some _ -> None
+                | None -> Some(x, y))
+            |> Seq.toArray)
+
+    let x, y = candidates[0]
 
     x * 4000000 + y
 
