@@ -46,8 +46,8 @@ let part1a input yCoord =
 
         let positions =
             seq {
-                for x in (sensorX - distance - 1) .. (sensorX + distance + 1) do
-                    for y in (sensorY - distance - 1) .. (sensorY + distance + 1) do
+                for x in (max 0 (sensorX - distance - 1)) .. (min 4000000 (sensorX + distance + 1)) do
+                    for y in (max 0 (sensorY - distance - 1)) .. (min 4000000 (sensorY + distance + 1)) do
                         if manhattanPoints (x, y) sensor <= distance then
                             yield (x, y)
             }
