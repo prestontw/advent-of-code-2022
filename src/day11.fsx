@@ -60,8 +60,6 @@ let startingItems =
       "74"
       "86, 85, 52, 86, 91, 95" ]
 
-let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0)
-
 let interpMonkey value monkey =
     let newValue =
         match monkey.operation with
@@ -91,7 +89,7 @@ let rec next monkey items otherItems =
 
         next monkey items newOtherItems
 
-let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex =
+let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex (inspectionCount: int[]) =
     if monkeyIndex >= (monkeys |> Array.length) then
         items
     else
@@ -102,23 +100,46 @@ let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex =
         let items =
             next (monkeys[monkeyIndex]) (items[monkeyIndex]) (items |> List.updateAt monkeyIndex [])
 
-        round monkeys items (monkeyIndex + 1)
+        round monkeys items (monkeyIndex + 1) inspectionCount
 
 
 let parse startingItems =
-    let startingItems =
-        startingItems
-        |> Seq.map (fun s -> s |> split ", " |> Seq.map int)
-        |> Seq.map Seq.toList
-        |> Seq.toList
+    startingItems
+    |> Seq.map (fun s -> split s ", " |> Seq.map int)
+    |> Seq.map Seq.toList
+    |> Seq.toList
 
+let part1 startingItems monkeys =
+    let startingItems = parse startingItems
+    let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0)
     let rounds = seq { 1..20 }
-    let finalItems = rounds |> Seq.fold (fun acc _ -> round monkeys acc 0) startingItems
+
+    let finalItems =
+        rounds
+        |> Seq.fold (fun acc _ -> round monkeys acc 0 inspectionCount) startingItems
+
     (inspectionCount |> Array.sortDescending) |> ignore
     inspectionCount[0] * inspectionCount[1]
 
+let sampleMonkeys =
+    [| { operation = Multiply 19
+         testDivisible = 23
+         trueIndex = 2
+         falseIndex = 3 }
+       { operation = Add 6
+         testDivisible = 19
+         trueIndex = 2
+         falseIndex = 0 }
+       { operation = OldSquared
+         testDivisible = 13
+         trueIndex = 1
+         falseIndex = 3 }
+       { operation = Add 3
+         testDivisible = 17
+         trueIndex = 0
+         falseIndex = 1 } |]
 
-let part1 input = parse input
+let sampleItems = [ "79, 98"; "54, 65, 75, 74"; "79, 60, 97"; "74" ]
 
 let tests =
     testList
@@ -126,8 +147,13 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 startingItems
+              let subject = part1 startingItems monkeys
               Expect.equal subject 1 ""
+          }
+
+          test "sample" {
+              let subject = part1 sampleItems sampleMonkeys
+              Expect.equal subject 10605 ""
           }
 
           ]
