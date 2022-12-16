@@ -60,14 +60,14 @@ let startingItems =
       "74"
       "86, 85, 52, 86, 91, 95" ]
 
-let interpMonkey value monkey =
+let interpMonkey value lcm monkey =
     let newValue =
         match monkey.operation with
         | Add x -> value + x
         | Multiply m -> value * m
         | OldSquared -> value * value
 
-    let newValue = newValue / 3
+    let newValue = newValue % lcm
 
     let newIndex =
         if (newValue % monkey.testDivisible) = 0 then
@@ -77,19 +77,19 @@ let interpMonkey value monkey =
 
     newValue, newIndex
 
-let rec next monkey items otherItems =
+let rec next monkey items otherItems lcm =
     match items with
     | [] -> otherItems
     | head :: items ->
-        let newWorry, newIndex = monkey |> interpMonkey head
+        let newWorry, newIndex = monkey |> interpMonkey head lcm
 
         let newOtherItems =
             otherItems
             |> List.updateAt newIndex (List.append otherItems[newIndex] [ newWorry ])
 
-        next monkey items newOtherItems
+        next monkey items newOtherItems lcm
 
-let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex (inspectionCount: int[]) =
+let rec round (monkeys: Monkey[]) (items: _ list list) monkeyIndex (inspectionCount: _[]) lcm =
     if monkeyIndex >= (monkeys |> Array.length) then
         items
     else
@@ -98,9 +98,9 @@ let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex (inspection
         inspectionCount[monkeyIndex] <- inspectionCount[monkeyIndex] + inspectionAmount
 
         let items =
-            next (monkeys[monkeyIndex]) (items[monkeyIndex]) (items |> List.updateAt monkeyIndex [])
+            next (monkeys[monkeyIndex]) (items[monkeyIndex]) (items |> List.updateAt monkeyIndex []) lcm
 
-        round monkeys items (monkeyIndex + 1) inspectionCount
+        round monkeys items (monkeyIndex + 1) inspectionCount lcm
 
 
 let parse startingItems =
@@ -112,14 +112,24 @@ let parse startingItems =
 let part1 startingItems monkeys =
     let startingItems = parse startingItems
     let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0)
-    let rounds = seq { 1..20 }
+    let rounds = seq { 1..10000 }
+
+    let lcm =
+        monkeys |> Seq.map (fun m -> m.testDivisible) |> Set.ofSeq |> Seq.fold lcm 1
 
     let finalItems =
         rounds
-        |> Seq.fold (fun acc _ -> round monkeys acc 0 inspectionCount) startingItems
+        |> Seq.fold
+            (fun acc roundNumber ->
+                if (roundNumber - 1) % 1000 = 0 || roundNumber = 21 || roundNumber = 2 then
+                    printfn "%A" inspectionCount
 
+                round monkeys acc 0 inspectionCount lcm)
+            startingItems
+
+    (tee inspectionCount) |> ignore
     let inspectionCount = inspectionCount |> Array.sortDescending
-    inspectionCount[0] * inspectionCount[1]
+    (inspectionCount[0] |> uint64) * (inspectionCount[1] |> uint64)
 
 let sampleMonkeys =
     [| { operation = Multiply 19
@@ -148,12 +158,12 @@ let tests =
 
           test "part 1" {
               let subject = part1 startingItems monkeys
-              Expect.equal subject 1 ""
+              Expect.equal subject 1UL ""
           }
 
           test "sample" {
               let subject = part1 sampleItems sampleMonkeys
-              Expect.equal subject 10605 ""
+              Expect.equal subject 2713310158UL ""
           }
 
           ]

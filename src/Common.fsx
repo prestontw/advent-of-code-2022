@@ -4,6 +4,10 @@ let manhattanDistance (x, y) = abs x + abs y
 
 let absDiff x y = (max x y) - (min x y)
 
+let rec gcd x y = if y = 0 then abs x else gcd y (x % y)
+
+let lcm x y = x * y / (gcd x y)
+
 let keysToSet (m: Map<'a, 'b>) : Set<'a> = m |> Map.keys |> Set.ofSeq
 
 let values m = m |> Map.values
