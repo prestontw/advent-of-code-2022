@@ -118,7 +118,7 @@ let part1 startingItems monkeys =
         rounds
         |> Seq.fold (fun acc _ -> round monkeys acc 0 inspectionCount) startingItems
 
-    (inspectionCount |> Array.sortDescending) |> ignore
+    let inspectionCount = inspectionCount |> Array.sortDescending
     inspectionCount[0] * inspectionCount[1]
 
 let sampleMonkeys =
