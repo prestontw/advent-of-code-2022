@@ -6,47 +6,47 @@ open Common
 open Expecto
 
 type Operation =
-    | Multiply of int
-    | Add of int
+    | Multiply of uint64
+    | Add of uint64
     | OldSquared
 
 type Monkey =
     { operation: Operation
-      testDivisible: int
+      testDivisible: uint64
       trueIndex: int
       falseIndex: int }
 
 let monkeys =
-    [| { operation = Multiply 17
-         testDivisible = 3
+    [| { operation = Multiply 17UL
+         testDivisible = 3UL
          trueIndex = 3
          falseIndex = 6 }
-       { operation = Add 2
-         testDivisible = 13
+       { operation = Add 2UL
+         testDivisible = 13UL
          trueIndex = 3
          falseIndex = 0 }
-       { operation = Add 1
-         testDivisible = 2
+       { operation = Add 1UL
+         testDivisible = 2UL
          trueIndex = 0
          falseIndex = 1 }
-       { operation = Add 7
-         testDivisible = 11
+       { operation = Add 7UL
+         testDivisible = 11UL
          trueIndex = 6
          falseIndex = 7 }
        { operation = OldSquared
-         testDivisible = 19
+         testDivisible = 19UL
          trueIndex = 2
          falseIndex = 5 }
-       { operation = Add 8
-         testDivisible = 17
+       { operation = Add 8UL
+         testDivisible = 17UL
          trueIndex = 2
          falseIndex = 1 }
-       { operation = Multiply 2
-         testDivisible = 5
+       { operation = Multiply 2UL
+         testDivisible = 5UL
          trueIndex = 4
          falseIndex = 7 }
-       { operation = Add 6
-         testDivisible = 7
+       { operation = Add 6UL
+         testDivisible = 7UL
          trueIndex = 4
          falseIndex = 5 } |]
 
@@ -70,7 +70,7 @@ let interpMonkey value lcm monkey =
     let newValue = newValue % lcm
 
     let newIndex =
-        if (newValue % monkey.testDivisible) = 0 then
+        if (newValue % monkey.testDivisible) = 0UL then
             monkey.trueIndex
         else
             monkey.falseIndex
@@ -93,7 +93,7 @@ let rec round (monkeys: Monkey[]) (items: _ list list) monkeyIndex (inspectionCo
     if monkeyIndex >= (monkeys |> Array.length) then
         items
     else
-        let inspectionAmount = items[monkeyIndex] |> List.length
+        let inspectionAmount = items[monkeyIndex] |> List.length |> uint64
 
         inspectionCount[monkeyIndex] <- inspectionCount[monkeyIndex] + inspectionAmount
 
@@ -105,17 +105,21 @@ let rec round (monkeys: Monkey[]) (items: _ list list) monkeyIndex (inspectionCo
 
 let parse startingItems =
     startingItems
-    |> Seq.map (fun s -> split s ", " |> Seq.map int)
+    |> Seq.map (fun s -> split s ", " |> Seq.map uint64)
     |> Seq.map Seq.toList
     |> Seq.toList
 
 let part1 startingItems monkeys =
     let startingItems = parse startingItems
-    let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0)
+    let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0UL)
     let rounds = seq { 1..10000 }
 
     let lcm =
-        monkeys |> Seq.map (fun m -> m.testDivisible) |> Set.ofSeq |> Seq.fold lcm 1
+        monkeys
+        |> Seq.map (fun m -> m.testDivisible |> int64)
+        |> Set.ofSeq
+        |> Seq.fold lcm 1L
+        |> uint64
 
     let finalItems =
         rounds
@@ -132,20 +136,20 @@ let part1 startingItems monkeys =
     (inspectionCount[0] |> uint64) * (inspectionCount[1] |> uint64)
 
 let sampleMonkeys =
-    [| { operation = Multiply 19
-         testDivisible = 23
+    [| { operation = Multiply 19UL
+         testDivisible = 23UL
          trueIndex = 2
          falseIndex = 3 }
-       { operation = Add 6
-         testDivisible = 19
+       { operation = Add 6UL
+         testDivisible = 19UL
          trueIndex = 2
          falseIndex = 0 }
        { operation = OldSquared
-         testDivisible = 13
+         testDivisible = 13UL
          trueIndex = 1
          falseIndex = 3 }
-       { operation = Add 3
-         testDivisible = 17
+       { operation = Add 3UL
+         testDivisible = 17UL
          trueIndex = 0
          falseIndex = 1 } |]
 

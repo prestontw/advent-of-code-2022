@@ -4,7 +4,7 @@ let manhattanDistance (x, y) = abs x + abs y
 
 let absDiff x y = (max x y) - (min x y)
 
-let rec gcd x y = if y = 0 then abs x else gcd y (x % y)
+let rec gcd x y = if y = 0L then abs x else gcd y (x % y)
 
 let lcm x y = x * y / (gcd x y)
 
