@@ -60,14 +60,65 @@ let startingItems =
       "74"
       "86, 85, 52, 86, 91, 95" ]
 
+let inspectionCount = Array.init (monkeys |> Array.length) (fun _ -> 0)
+
+let interpMonkey value monkey =
+    let newValue =
+        match monkey.operation with
+        | Add x -> value + x
+        | Multiply m -> value * m
+        | OldSquared -> value * value
+
+    let newValue = newValue / 3
+
+    let newIndex =
+        if (newValue % monkey.testDivisible) = 0 then
+            monkey.trueIndex
+        else
+            monkey.falseIndex
+
+    newValue, newIndex
+
+let rec next monkey items otherItems =
+    match items with
+    | [] -> otherItems
+    | head :: items ->
+        let newWorry, newIndex = monkey |> interpMonkey head
+
+        let newOtherItems =
+            otherItems
+            |> List.updateAt newIndex (List.append otherItems[newIndex] [ newWorry ])
+
+        next monkey items newOtherItems
+
+let rec round (monkeys: Monkey[]) (items: int list list) monkeyIndex =
+    if monkeyIndex >= (monkeys |> Array.length) then
+        items
+    else
+        let inspectionAmount = items[monkeyIndex] |> List.length
+
+        inspectionCount[monkeyIndex] <- inspectionCount[monkeyIndex] + inspectionAmount
+
+        let items =
+            next (monkeys[monkeyIndex]) (items[monkeyIndex]) (items |> List.updateAt monkeyIndex [])
+
+        round monkeys items (monkeyIndex + 1)
+
+
 let parse startingItems =
-    startingItems |> Seq.map (fun s -> s |> split ", " |> Seq.map int)
+    let startingItems =
+        startingItems
+        |> Seq.map (fun s -> s |> split ", " |> Seq.map int)
+        |> Seq.map Seq.toList
+        |> Seq.toList
+
+    let rounds = seq { 1..20 }
+    let finalItems = rounds |> Seq.fold (fun acc _ -> round monkeys acc 0) startingItems
+    (inspectionCount |> Array.sortDescending) |> ignore
+    inspectionCount[0] * inspectionCount[1]
 
 
-let part1 input =
-    let lines = parse input
-
-    1
+let part1 input = parse input
 
 let tests =
     testList
