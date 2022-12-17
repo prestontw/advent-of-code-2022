@@ -31,9 +31,8 @@ type Cell =
     | Sensor
     | NotBeacon
 
-let incrementOrOne (dict: int[]) key =
-    if key >= 0 && key < 4000000 then
-        dict[key] <- dict[key] + 1
+let incrementOrOne value =
+    value |> Option.map ((+) 1) |> Option.orElse (Some 1)
 
 
 let pointsAtDistance d (pX, pY) =
@@ -70,66 +69,39 @@ let pointsAtDistance d (pX, pY) =
     |> Seq.append rightToDown
     |> Seq.append downToLeft
 
-let part1a input yCoord =
+
+let part1 input boundary =
     let lines = parse input
-    let xCounts = Array.init 4000000 (fun _ -> 0)
-    let yCounts = Array.init 4000000 (fun _ -> 0)
+    // for each sensor, beacon
+    let counts =
+        lines
+        |> Seq.fold
+            (fun acc (sensor, beacon) ->
+                //  get distance between
+                let distance = manhattanPoints sensor beacon
+                //  get points around sensor at 1 + distance
+                let adjacentPoints = sensor |> pointsAtDistance (distance + 1)
 
-    let folder (grid: Map<_, _>) (sensor, beacon) =
-        let distance = manhattanPoints sensor beacon
-        let (sensorX, sensorY) = sensor
+                adjacentPoints
+                |> Seq.fold
+                    (fun acc point ->
+                        let x, y = point
 
-        let positions =
-            seq {
-                for x in (max 0 (sensorX - distance - 1)) .. (min 4000000 (sensorX + distance + 1)) do
-                    for y in (max 0 (sensorY - distance - 1)) .. (min 4000000 (sensorY + distance + 1)) do
-                        if manhattanPoints (x, y) sensor <= distance then
-                            yield (x, y)
-            }
+                        // if point in points within bounds (and optionally not covered by another sensor)
+                        if x >= 0 && x <= boundary && y >= 0 && y <= boundary then
+                            // add point to dictionary
+                            acc |> Map.change point incrementOrOne
+                        else
+                            acc)
+                    acc)
+            (Map [])
+    // find points in dictionary that has count >= 4
+    let points = counts |> Map.toSeq |> Seq.filter (fun (_, count) -> count > 4)
+    // filter these points out to those that aren't interior
+    (tee (points |> Seq.toList)) |> ignore
+    let (x, y), _count = points |> Seq.item 0
 
-        let grid =
-            positions
-            |> Seq.fold
-                (fun grid pos ->
-                    match grid |> Map.tryFind pos with
-                    | None ->
-                        let ret = grid |> Map.add pos NotBeacon
-                        let (x, y) = pos
-
-                        incrementOrOne xCounts x
-
-                        incrementOrOne yCounts y
-
-                        ret
-                    | Some _ -> grid)
-                grid
-
-        if grid |> Map.tryFind sensor |> Option.isNone then
-            let x, y = sensor
-            incrementOrOne xCounts x
-            incrementOrOne yCounts y
-
-        if grid |> Map.tryFind beacon |> Option.isNone then
-            let x, y = beacon
-            incrementOrOne xCounts x
-            incrementOrOne yCounts y
-
-        let grid = grid |> Map.add sensor Sensor
-        grid |> Map.add beacon Beacon
-
-    let grid = lines |> Seq.fold folder (Map [])
-
-    grid, xCounts, yCounts
-
-
-let part1 input ycoord =
-    let _, xCounts, yCounts = part1a input ycoord
-
-    let x = xCounts |> Array.findIndex ((=) 4000000)
-
-    let y = yCounts |> Array.findIndex ((=) 4000000)
-
-    x * 4000000 + y
+    (uint64 x) * 4000000UL + (uint64 y)
 
 let sample =
     "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
@@ -153,10 +125,15 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day15.data p1YCoord
-              Expect.equal subject 1 ""
+              let subject = part1 Day15.data 4000000
+              Expect.equal subject 1UL ""
+          }
+
+          test "sample" {
+              let subject = part1 sample 20
+              Expect.equal subject 56000011UL ""
           }
 
           ]
 
-// let main = runTestsWithCLIArgs [] [||] tests
+let main = runTestsWithCLIArgs [] [||] tests
