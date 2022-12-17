@@ -10,6 +10,7 @@ let lineRegex =
 
 let extractLineValues = extractValues lineRegex
 
+// can add each cell at border; if a cell has adjacency count >= 4, that's it!
 let parse input =
     let lines = input |> lines
 
@@ -34,6 +35,40 @@ let incrementOrOne (dict: int[]) key =
     if key >= 0 && key < 4000000 then
         dict[key] <- dict[key] + 1
 
+
+let pointsAtDistance d (pX, pY) =
+    let leftToUp =
+        seq {
+            for x in -d .. -1 do
+                let y = d + x
+                yield x + pX, y + pY
+        }
+
+    let upToRight =
+        seq {
+            for y in d .. -1 .. 1 do
+                let x = d - y
+                yield x + pX, y + pY
+        }
+
+    let rightToDown =
+        seq {
+            for x in d .. -1 .. 1 do
+                let y = x - d
+                yield x + pX, y + pY
+        }
+
+    let downToLeft =
+        seq {
+            for y in -d .. -1 do
+                let x = -d - y
+                yield x + pX, y + pY
+        }
+
+    leftToUp
+    |> Seq.append upToRight
+    |> Seq.append rightToDown
+    |> Seq.append downToLeft
 
 let part1a input yCoord =
     let lines = parse input
@@ -124,4 +159,4 @@ let tests =
 
           ]
 
-let main = runTestsWithCLIArgs [] [||] tests
+// let main = runTestsWithCLIArgs [] [||] tests
