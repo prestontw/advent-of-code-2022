@@ -96,8 +96,23 @@ let part1 input boundary =
                     acc)
             (Map [])
     // find points in dictionary that has count >= 4
-    let points = counts |> Map.toSeq |> Seq.filter (fun (_, count) -> count > 4)
+    let points = counts |> Map.toSeq |> Seq.filter (fun (_, count) -> count >= 4)
+
+    let distances =
+        lines
+        |> Seq.map (fun (sensor, beacon) ->
+            let distance = manhattanPoints sensor beacon
+            sensor, distance)
+
     // filter these points out to those that aren't interior
+    let points =
+        points
+        |> Seq.filter (fun (point, _count) ->
+            distances
+            |> Seq.forall (fun (sensor, distance) ->
+                let interior = (manhattanPoints sensor point) <= distance
+                not interior))
+
     (tee (points |> Seq.toList)) |> ignore
     let (x, y), _count = points |> Seq.item 0
 
