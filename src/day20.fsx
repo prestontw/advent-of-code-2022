@@ -5,9 +5,45 @@
 open Common
 open Expecto
 
+(*
+    Initial arrangement:
+811589153, 1623178306, -2434767459, 2434767459, -1623178306, 0, 3246356612
+
+After 1 round of mixing:
+0, -2434767459, 3246356612, -1623178306, 2434767459, 1623178306, 811589153
+
+After 2 rounds of mixing:
+0, 2434767459, 1623178306, 3246356612, -2434767459, -1623178306, 811589153
+
+After 3 rounds of mixing:
+0, 811589153, 2434767459, 3246356612, 1623178306, -1623178306, -2434767459
+
+After 4 rounds of mixing:
+0, 1623178306, -2434767459, 811589153, 2434767459, 3246356612, -1623178306
+
+After 5 rounds of mixing:
+0, 811589153, -1623178306, 1623178306, -2434767459, 3246356612, 2434767459
+
+After 6 rounds of mixing:
+0, 811589153, -1623178306, 3246356612, -2434767459, 1623178306, 2434767459
+
+After 7 rounds of mixing:
+0, -2434767459, 2434767459, 1623178306, -1623178306, 811589153, 3246356612
+
+After 8 rounds of mixing:
+0, 1623178306, 3246356612, 811589153, -2434767459, 2434767459, -1623178306
+
+After 9 rounds of mixing:
+0, 811589153, 1623178306, -2434767459, 3246356612, 2434767459, -1623178306
+
+After 10 rounds of mixing:
+0, -2434767459, 1623178306, 3246356612, -1623178306, 2434767459, 811589153
+*)
 let parse input =
     let lines = input |> lines
-    Seq.map (int) lines |> Seq.indexed
+
+    Seq.map (int >> (fun (d: int) -> int64 d) >> (fun d -> d * 811589153L)) lines
+    |> Seq.indexed
 
 let moddedIndex l i =
     let len = List.length l
@@ -15,7 +51,7 @@ let moddedIndex l i =
     l[offset]
 
 let indexAfter0 l offsetFromZero =
-    let zeroPos = List.findIndex ((=) 0) l
+    let zeroPos = List.findIndex ((=) 0L) l
     moddedIndex l (zeroPos + offsetFromZero)
 
 let groveCoordinates l =
@@ -25,16 +61,17 @@ let insertAtSpaces l num =
     let index = l |> List.findIndex ((=) num)
     let originalIndex, num = num
     let length = l |> List.length
-    let newIndex = index + (num % (length - 1))
+    let lengthMinus1 = (int64 length) - 1L
+    let newIndex = (int64 index) + (num % lengthMinus1) |> int
 
     if newIndex >= length then
-        let untilEnd = (length - 1) - index
-        let newIndex = (num - untilEnd) % (length - 1)
+        let untilEnd = (lengthMinus1) - (int64 index)
+        let newIndex = (num - untilEnd) % (lengthMinus1) |> int
         l |> List.removeAt index |> List.insertAt (newIndex) (originalIndex, num)
     else if newIndex < 0 then
         l
         |> List.removeAt index
-        |> List.insertAt ((newIndex - 1 + length) % length) (originalIndex, num)
+        |> List.insertAt (int (((int64 newIndex - 1L) + (int64 length)) % (int64 length))) (originalIndex, num)
     else
         l |> List.removeAt index |> List.insertAt newIndex (originalIndex, num)
 
@@ -42,7 +79,7 @@ let normalize l =
     let rec inner l pending =
         match l with
         | [] -> failwith "expected to find 0"
-        | (_, h) :: _ when h = 0 -> List.append l (List.rev pending)
+        | (_, h) :: _ when h = 0L -> List.append l (List.rev pending)
         | h :: rest -> inner rest (h :: pending)
 
     inner l []
@@ -50,10 +87,17 @@ let normalize l =
 let tee = id
 
 let mix originalNums =
-    let afterOne =
-        originalNums |> List.fold (fun acc num -> (insertAtSpaces acc num)) originalNums
+    [ 1..10 ]
+    |> Seq.fold
+        (fun acc _index ->
+            tee (_index - 1, acc |> normalize) |> ignore
 
-    afterOne
+            let afterOne =
+                originalNums |> List.fold (fun acc num -> (insertAtSpaces acc num)) acc
+
+            afterOne)
+        originalNums
+    |> tee
 
 
 let part1 input =
@@ -69,31 +113,13 @@ let tests =
 
           test "sample" {
               let subject = part1 Day20.sample
-              Expect.equal subject 3 ""
-          }
-          test "around times" {
-              let subject =
-                  (parse >> Seq.toList >> mix >> List.map snd) "1\n2\n10\n-3\n3\n-2\n-11\n0\n4"
-
-              Expect.equal subject [ 1; -11; -2; 2; 4; 10; 0; 3; -3 ] ""
-          }
-          test "manageable multiple times" {
-              let subject =
-                  (parse >> Seq.toList >> mix >> normalize >> List.map snd) "20\n-22\n4\n0\n5"
-
-              Expect.equal subject [ 0; -22; 20; 5; 4 ] ""
-          }
-          test "manageable multiple times 2" {
-              let subject =
-                  (parse >> Seq.toList >> mix >> normalize >> List.map snd) "21\n-22\n-4\n0\n5"
-
-              Expect.equal subject [ 0; 21; 5; -4; -22 ] ""
+              Expect.equal subject 1623178306L ""
           }
 
           test "part 1" {
               let subject = part1 Day20.data
-              Expect.equal subject 4267 ""
-              Expect.notEqual subject -20632 ""
+              Expect.equal subject 6871725358451L ""
+              Expect.notEqual subject -20632L ""
           }
 
           ]
