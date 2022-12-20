@@ -21,28 +21,28 @@ let indexAfter0 l offsetFromZero =
 let groveCoordinates l =
     (indexAfter0 l 1000) + (indexAfter0 l 2000) + (indexAfter0 l 3000)
 
-type Direction =
-    | Left of int
-    | Right of int
+let insertAtSpaces l num =
+    let index = l |> List.findIndex ((=) num)
+    let length = l |> List.length
+    let newIndex = index + (num % (length - 1))
 
-let amt d =
-    match d with
-    | Left d
-    | Right d -> d
-
-let rec insertAtSpaces l num amount =
-    if amt amount = 0 then
-        l
+    if newIndex >= length then
+        let untilEnd = (length - 1) - index
+        let newIndex = (num - untilEnd) % (length - 1)
+        l |> List.removeAt index |> List.insertAt (newIndex) num
+    else if newIndex < 0 then
+        l |> List.removeAt index |> List.insertAt ((newIndex - 1 + length) % length) num
     else
-        let index = l |> List.findIndex ((=) num)
+        l |> List.removeAt index |> List.insertAt newIndex num
 
-        match index, amount with
-        | 0, Left d ->
-            insertAtSpaces (l |> List.removeAt index |> List.insertAt ((List.length l) - 2) num) num (Left(d - 1))
-        | e, Right d when e = (l |> List.length |> (fun d -> d - 1)) ->
-            insertAtSpaces (l |> List.removeAt index |> List.insertAt 1 num) num (Right(d - 1))
-        | _, Right d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index + 1) num) num (Right(d - 1))
-        | _, Left d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index - 1) num) num (Left(d - 1))
+let normalize l =
+    let rec inner l pending =
+        match l with
+        | [] -> failwith "expected to find 0"
+        | h :: _ when h = 0 -> List.append l (List.rev pending)
+        | h :: rest -> inner rest (h :: pending)
+
+    inner l []
 
 let tee = id
 
@@ -51,18 +51,9 @@ let mix originalNums =
         originalNums
         |> List.fold
             (fun acc num ->
-                let index = tee ((tee acc) |> List.findIndex ((=) (tee num)))
+                let index = tee ((acc) |> List.findIndex ((=) (tee num)))
 
-                tee (
-                    insertAtSpaces
-                        acc
-                        num
-                        (if num < 0 then
-                             Left(abs (num % (acc |> List.length |> (fun d -> d - 1))))
-                         else
-                             Right(num % (acc |> List.length |> (fun d -> d - 1))))
-
-                ))
+                (insertAtSpaces acc num))
             originalNums
 
     afterOne
@@ -87,10 +78,19 @@ let tests =
               let subject = (parse >> Seq.toList >> mix) "1\n2\n10\n-3\n3\n-2\n-11\n0\n4"
               Expect.equal subject [ 1; -11; -2; 2; 4; 10; 0; 3; -3 ] ""
           }
+          test "manageable multiple times" {
+              let subject = (parse >> Seq.toList >> mix >> normalize) "20\n-22\n4\n0\n5"
+              Expect.equal subject [ 0; -22; 20; 5; 4 ] ""
+          }
+          test "manageable multiple times 2" {
+              let subject = (parse >> Seq.toList >> mix >> normalize) "21\n-22\n-4\n0\n5"
+              Expect.equal subject [ 0; 21; 5; -4; -22 ] ""
+          }
 
           test "part 1" {
               let subject = part1 Day20.data
               Expect.equal subject 1 ""
+              Expect.notEqual subject -20632 ""
           }
 
           ]
