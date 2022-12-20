@@ -30,23 +30,19 @@ let amt d =
     | Left d
     | Right d -> d
 
-let rec insertAtSpaces l num index amount =
+let rec insertAtSpaces l num amount =
     if amt amount = 0 then
         l
     else
+        let index = l |> List.findIndex ((=) num)
+
         match index, amount with
         | 0, Left d ->
-            insertAtSpaces
-                (List.removeAt index l |> List.insertAt ((List.length l) - 2) num)
-                num
-                ((List.length l) - 2)
-                (Left(d - 1))
+            insertAtSpaces (List.removeAt index l |> List.insertAt ((List.length l) - 2) num) num (Left(d - 1))
         | e, Right d when e = (l |> List.length |> (fun d -> d - 1)) ->
-            insertAtSpaces (l |> List.removeAt e |> List.insertAt 0 num) num 0 (Right(d - 1))
-        | _, Right d ->
-            insertAtSpaces (l |> List.removeAt index |> List.insertAt (index + 1) num) num (index + 1) (Right(d - 1))
-        | _, Left d ->
-            insertAtSpaces (l |> List.removeAt index |> List.insertAt (index - 1) num) num (index - 1) (Left(d - 1))
+            insertAtSpaces (l |> List.removeAt e |> List.insertAt 1 num) num (Right(d - 1))
+        | _, Right d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index + 1) num) num (Right(d - 1))
+        | _, Left d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index - 1) num) num (Left(d - 1))
 
 let tee = id
 
@@ -61,14 +57,12 @@ let mix originalNums =
                     insertAtSpaces
                         acc
                         num
-                        index
                         (if num < 0 then
-                             Left(abs (num % (acc |> List.length)))
+                             Left(abs (num % (acc |> List.length |> (fun d -> d - 1))))
                          else
-                             Right(num % (acc |> List.length)))
-                )
+                             Right(num % (acc |> List.length |> (fun d -> d - 1))))
 
-                )
+                ))
             originalNums
 
     afterOne
@@ -89,15 +83,15 @@ let tests =
               let subject = part1 Day20.sample
               Expect.equal subject 3 ""
           }
-          //   test "around times" {
-          //       let subject = (parse >> Seq.toList >> mix) "1\n2\n10\n-3\n3\n-2\n-11\n0\n4"
-          //       Expect.equal subject [ -3; 1; -11; 4; -2; 2; 10; 0; 3 ] ""
-
-          // }
-          test "part 1" {
-              let subject = part1 Day20.data
-              Expect.equal subject 1 ""
+          test "around times" {
+              let subject = (parse >> Seq.toList >> mix) "1\n2\n10\n-3\n3\n-2\n-11\n0\n4"
+              Expect.equal subject [ 1; -11; -2; 2; 4; 10; 0; 3; -3 ] ""
           }
+
+          //   test "part 1" {
+          //       let subject = part1 Day20.data
+          //       Expect.equal subject 1 ""
+          //   }
 
           ]
 
