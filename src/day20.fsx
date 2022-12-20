@@ -38,9 +38,9 @@ let rec insertAtSpaces l num amount =
 
         match index, amount with
         | 0, Left d ->
-            insertAtSpaces (List.removeAt index l |> List.insertAt ((List.length l) - 2) num) num (Left(d - 1))
+            insertAtSpaces (l |> List.removeAt index |> List.insertAt ((List.length l) - 2) num) num (Left(d - 1))
         | e, Right d when e = (l |> List.length |> (fun d -> d - 1)) ->
-            insertAtSpaces (l |> List.removeAt e |> List.insertAt 1 num) num (Right(d - 1))
+            insertAtSpaces (l |> List.removeAt index |> List.insertAt 1 num) num (Right(d - 1))
         | _, Right d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index + 1) num) num (Right(d - 1))
         | _, Left d -> insertAtSpaces (l |> List.removeAt index |> List.insertAt (index - 1) num) num (Left(d - 1))
 
@@ -88,10 +88,10 @@ let tests =
               Expect.equal subject [ 1; -11; -2; 2; 4; 10; 0; 3; -3 ] ""
           }
 
-          //   test "part 1" {
-          //       let subject = part1 Day20.data
-          //       Expect.equal subject 1 ""
-          //   }
+          test "part 1" {
+              let subject = part1 Day20.data
+              Expect.equal subject 1 ""
+          }
 
           ]
 
