@@ -120,7 +120,7 @@ let actions =
 let calculateGeodes blueprint =
 
     let rec inner (time, counts) =
-        if time > 24 then
+        if time >= 24 then
             counts.geode
         else
             actions
