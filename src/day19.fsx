@@ -137,7 +137,7 @@ let part1 input =
     let blueprints = parse input
 
     let qualityLevel blueprint =
-        blueprint.num * (calculateGeodes blueprint)
+        tee blueprint.num * tee (calculateGeodes blueprint)
 
     blueprints |> Seq.sumBy qualityLevel
 
@@ -147,9 +147,15 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day19.sample
+              let subject = part1 Day19.data
               Expect.equal subject 33 ""
           }
+          //   test "bounds" {
+          //       let parsed = Day19.sample |> parse |> Seq.toList |> List.head
+
+          //       let subject = calculateGeodes parsed
+          //       Expect.equal subject 9 ""
+          //   }
 
           ]
 
