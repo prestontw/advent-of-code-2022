@@ -161,24 +161,26 @@ let simulate grid maxX maxY =
             | _ -> acc)
         starting
 
+let simulateM = memoize (fun (g, x, y) -> simulate g x y)
+
 // keep track of different boards
 let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
     let openSet = System.Collections.Generic.PriorityQueue()
     starts |> Seq.iter (fun t -> openSet.Enqueue((0, t, grid), 0))
     let costs = Map(starts |> Seq.map (fun pos -> (0, pos), 0))
 
-    let estimate (x, y) time =
+    let estimate (x, y) =
         let destX, destY = dest
-        (absDiff x destX) + (absDiff y destY) + time
+        (absDiff x destX) + (absDiff y destY)
 
     let rec next (gScore: Map<(int * (int * int)), int>) =
         let folder time prevPos nowPos cost nextBoard acc =
             let newScore = (acc |> Map.find (time, prevPos)) + cost
             let potential = acc |> Map.tryFind (time + 1, nowPos)
-            let estimate = estimate nowPos time
+            let estimate = estimate nowPos
 
             match potential with
-            | Some c when c > newScore ->
+            | Some existing when existing > newScore ->
                 let ret = acc |> Map.add ((time + 1), nowPos) newScore
                 openSet.Enqueue((time + 1, nowPos, nextBoard), newScore + estimate)
                 ret
@@ -192,8 +194,7 @@ let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
             None
         else
             let (time, pos, board) = openSet.Dequeue()
-            printf "%A %A\n" time pos
-            let nextBoard = simulate board maxWidth maxHeight
+            let nextBoard = simulateM (board, maxWidth, maxHeight)
 
             let reachable p =
                 nextBoard
@@ -205,6 +206,7 @@ let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
                     | Some(Blizzard _)
                     | Some Wall -> false
                     | _ -> true
+
 
             if pos = dest then
                 gScore |> Map.tryFind (time, pos)
@@ -237,10 +239,10 @@ let tests =
               let subject = part1 Day24.sample
               Expect.equal subject (Some 18) ""
           }
-          //   test "part 1" {
-          //       let subject = part1 Day24.data
-          //       Expect.equal subject None ""
-          //   }
+          test "part 1" {
+              let subject = part1 Day24.data
+              Expect.equal subject None ""
+          }
 
           ]
 

@@ -65,7 +65,7 @@ let memoize f =
         match Map.tryFind input savedResults.Value with
         | Some result -> result
         | None ->
-            printf "computing from scratch! %A\n" input
+            // printf "computing from scratch! %A\n" input
             let result = f input
             savedResults.Value <- Map.add input result savedResults.Value
             result
