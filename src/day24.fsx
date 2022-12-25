@@ -164,7 +164,7 @@ let simulate grid maxX maxY =
 let simulateM = memoize (fun (g, x, y) -> simulate g x y)
 
 // keep track of different boards
-let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
+let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest simulateM =
     let openSet = System.Collections.Generic.PriorityQueue()
     starts |> Seq.iter (fun t -> openSet.Enqueue((0, t, grid), 0))
     let costs = Map(starts |> Seq.map (fun pos -> (0, pos), 0))
@@ -209,7 +209,7 @@ let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
 
 
             if pos = dest then
-                gScore |> Map.tryFind (time, pos)
+                gScore |> Map.tryFind (time, pos) |> Option.map (fun success -> success, board)
             else
                 let nexts = pos |> cardinalNeighbors |> List.append [ pos ] |> Seq.filter reachable
 
@@ -218,6 +218,24 @@ let aStar (grid, maxWidth, maxHeight) (starts: seq<(int * int)>) dest =
     next costs
 
 
+let flipBoard board =
+    board
+    |> Map.toSeq
+    |> Seq.map (fun (pos, cell) ->
+        (pos,
+         match cell with
+         | Expedition -> Sink
+         | Sink -> Expedition
+         | cell -> cell))
+    |> Map.ofSeq
+
+let travel (startingBoard, maxX, maxY) simulateFn =
+    let start =
+        startingBoard |> Map.toSeq |> Seq.find (fun s -> snd s = Expedition) |> fst
+
+    let dest = startingBoard |> Map.toSeq |> Seq.find (fun s -> snd s = Sink) |> fst
+
+    aStar (startingBoard, maxX, maxY) [ start ] dest simulateFn
 
 let part1 input =
     let lines = parse input
@@ -225,10 +243,21 @@ let part1 input =
     let maxX = lines |> maxX
     let maxY = lines |> maxY
 
-    let start = lines |> Map.toSeq |> Seq.find (fun s -> snd s = Expedition) |> fst
-    let dest = lines |> Map.toSeq |> Seq.find (fun s -> snd s = Sink) |> fst
+    let c1, lines =
+        travel (lines, maxX, maxY) (memoize (fun (g, x, y) -> simulate g x y))
+        |> Option.get
 
-    aStar (lines, maxX, maxY) [ start ] dest
+    let c2, lines =
+        travel ((flipBoard lines), maxX, maxY) (memoize (fun (g, x, y) -> simulate g x y))
+        |> Option.get
+
+    let c3, _ =
+        travel ((flipBoard lines), maxX, maxY) (memoize (fun (g, x, y) -> simulate g x y))
+        |> Option.get
+
+    tee (c1, c2, c3) |> ignore
+    c1 + c2 + c3
+
 
 let tests =
     testList
@@ -237,12 +266,12 @@ let tests =
 
           test "sample" {
               let subject = part1 Day24.sample
-              Expect.equal subject (Some 18) ""
+              Expect.equal subject 54 ""
           }
-          test "part 1" {
-              let subject = part1 Day24.data
-              Expect.equal subject None ""
-          }
+          //   test "part 1" {
+          //       let subject = part1 Day24.data
+          //       Expect.equal subject None ""
+          //   }
 
           ]
 
