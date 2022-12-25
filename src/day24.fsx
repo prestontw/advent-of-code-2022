@@ -41,6 +41,7 @@ let charToCell c =
     | 'v' -> Blizzard { emptyBlizzard with Downwards = 1 }
     | '.' -> Blizzard emptyBlizzard
     | 'S' -> Sink
+    | c -> failwithf "didn't recognize char %A" c
 
 let parse input =
     let lines = input |> lines
@@ -268,10 +269,10 @@ let tests =
               let subject = part1 Day24.sample
               Expect.equal subject 54 ""
           }
-          //   test "part 1" {
-          //       let subject = part1 Day24.data
-          //       Expect.equal subject None ""
-          //   }
+          test "part 1" {
+              let subject = part1 Day24.data
+              Expect.equal subject 735 ""
+          }
 
           ]
 
