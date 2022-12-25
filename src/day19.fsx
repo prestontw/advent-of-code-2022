@@ -110,30 +110,34 @@ let actM = memoize (fun (t, c, b) -> act t c b)
 
 let actions =
     seq {
-        Nothing
-        MakeClayRobot
-        MakeObsidianRobot
-        MakeOreRobot
         MakeGeodeRobot
+        MakeObsidianRobot
+        MakeClayRobot
+        MakeOreRobot
+        Nothing
     }
 
-let rec calculateGeodes (time, counts, blueprint) =
-    if time > 24 then
-        counts.geode
-    else
-        actions
-        |> Seq.map (fun action ->
-            let counts = actM (action, counts, blueprint)
-            fastCalculateGeodes ((time + 1), counts, blueprint))
-        |> Seq.max
+let calculateGeodes blueprint =
 
-and fastCalculateGeodes = memoize calculateGeodes
+    let rec inner (time, counts) =
+        if time > 24 then
+            counts.geode
+        else
+            actions
+            |> Seq.map (fun action ->
+                let counts = act action counts blueprint
+                innerFast ((time + 1), counts))
+            |> Seq.max
+
+    and innerFast = memoize inner
+
+    inner (0, emptyCounts)
 
 let part1 input =
     let blueprints = parse input
 
     let qualityLevel blueprint =
-        blueprint.num * (calculateGeodes (1, emptyCounts, blueprint))
+        blueprint.num * (calculateGeodes blueprint)
 
     blueprints |> Seq.sumBy qualityLevel
 
