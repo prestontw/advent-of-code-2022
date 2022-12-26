@@ -117,13 +117,51 @@ let actions =
         Nothing
     }
 
+let generateActions counts blueprint =
+    seq {
+        if
+            counts.ore >= (fst blueprint.geodeRCost)
+            && counts.obsidian >= (snd blueprint.geodeRCost)
+        then
+            yield MakeGeodeRobot
+        else
+        // if we generate enough per turn to generate a geode robot, do nothing
+        if
+            counts.oreRobot >= (fst blueprint.geodeRCost)
+            && counts.obsidianRobot >= (snd blueprint.geodeRCost)
+        then
+            yield Nothing
+        else
+            let maxObsidianRequirement = snd blueprint.geodeRCost
+
+            if counts.obsidianRobot < maxObsidianRequirement then
+                yield MakeObsidianRobot
+
+            let maxClayRequirement = snd blueprint.obsRCost
+
+            if counts.clayRobot < maxClayRequirement then
+                yield MakeClayRobot
+
+            let maxOreRequirement =
+                [ blueprint.oreRCost
+                  blueprint.clayRCost
+                  (fst blueprint.obsRCost)
+                  (fst blueprint.geodeRCost) ]
+                |> List.max
+
+            if counts.oreRobot < maxOreRequirement then
+                yield MakeOreRobot
+
+            yield Nothing
+    }
+
 let calculateGeodes blueprint =
 
     let rec inner (time, counts) =
         if time >= 24 then
             counts.geode
         else
-            actions
+            (generateActions counts blueprint)
             |> Seq.map (fun action ->
                 let counts = act action counts blueprint
                 innerFast ((time + 1), counts))
