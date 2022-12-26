@@ -155,10 +155,27 @@ let generateActions counts blueprint =
             yield Nothing
     }
 
+let maxPossible counts timeRemaining =
+    counts.geode
+    + counts.geodeRobot * timeRemaining
+    // assuming we make geoderobots every turn from now on
+    + ((timeRemaining * (timeRemaining - 1)) / 2)
+
 let calculateGeodes blueprint =
+    let mutable currentMax = None
 
     let rec inner (time, counts) =
-        if time >= 24 then
+        if time >= 32 then
+            if currentMax |> Option.map (fun m -> counts.geode > m) |> Option.defaultValue true then
+                currentMax <- Some counts.geode
+
+            counts.geode
+        else if
+            currentMax
+            |> Option.map (fun m -> (maxPossible counts (32 - time)) <= m)
+            |> Option.defaultValue false
+        then
+            // prune this branch
             counts.geode
         else
             (generateActions counts blueprint)
@@ -172,12 +189,15 @@ let calculateGeodes blueprint =
     inner (0, emptyCounts)
 
 let part1 input =
-    let blueprints = parse input
+    let blueprints = parse input |> Seq.take 3
 
-    let qualityLevel blueprint =
-        tee blueprint.num * tee (calculateGeodes blueprint)
+    let numberGeodes blueprint =
+        tee blueprint.num |> ignore
+        tee (calculateGeodes blueprint)
 
-    blueprints |> Seq.sumBy qualityLevel
+    blueprints
+    |> Seq.map numberGeodes
+    |> Seq.fold (fun acc cur -> (int64 cur) * acc) 1L
 
 let tests =
     testList
