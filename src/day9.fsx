@@ -15,12 +15,45 @@ let parse input =
 let areAdjacent (x1, y1) (x2, y2) =
     (absDiff x1 x2) <= 1 && (absDiff y1 y2) <= 1
 
-let rec next positions dir amount tailVisited =
+let makeAdjacent toMove target =
+    let (toX, toY) = toMove
+    let (targetX, targetY) = target
+
+    if toX = targetX then
+        //move up or down
+        if targetY > toY then (toX, toY + 1) else (toX, toY - 1)
+    else if toY = targetY then
+        // move left or right
+        if targetX > toX then (toX + 1, toY) else (toX - 1, toY)
+    else if toX < targetX && toY < targetY then
+        (toX + 1, toY + 1)
+    else if toX < targetX && toY > targetY then
+        (toX + 1, toY - 1)
+    else if toX > targetX && toY < targetY then
+        (toX - 1, toY + 1)
+    else if toX > targetX && toY > targetY then
+        (toX - 1, toY - 1)
+    else
+        printfn "whoopsie"
+        toMove
+
+
+let rec propogateMovement positions newHead =
+    match positions with
+    | [] -> []
+    | current :: _ when areAdjacent current newHead -> positions
+    | current :: tail ->
+        // move current adjacent to new head
+        let movedCurrent = makeAdjacent current newHead
+        // then recurse
+        movedCurrent :: (propogateMovement tail movedCurrent)
+
+let rec next (positions: (int * int) list) dir amount tailVisited =
 
     if amount = 0 then
         positions, tailVisited
     else
-        let headX, headY = head
+        let headX, headY = positions[0]
 
         let newHead =
             match dir with
@@ -29,18 +62,17 @@ let rec next positions dir amount tailVisited =
             | "L" -> headX - 1, headY
             | "R" -> headX + 1, headY
 
-        if areAdjacent newHead tail then
-            next newHead tail dir (amount - 1) tailVisited
-        else
-            next newHead head dir (amount - 1) (Set.add head tailVisited)
+        let tail = propogateMovement (positions |> List.tail) newHead
+        next (newHead :: tail) dir (amount - 1) (Set.add (tail |> List.last) tailVisited)
+
 
 let visited lines =
-    let initial = (0, 0), (0, 0), (Set [ 0, 0 ])
+    let initial = List.init 10 (fun _ -> (0, 0)), (Set [ 0, 0 ])
 
     let folder =
-        fun (head, tail, visited) (dir, amount) -> next head tail dir amount visited
+        fun (positions, visited) (dir, amount) -> next positions dir amount visited
 
-    let _, _, visited = Seq.fold folder initial lines
+    let _, visited = Seq.fold folder initial lines
 
     visited
 
