@@ -32,18 +32,20 @@ let parse input =
 let mapByName valves =
     valves |> Seq.map (fun v -> (v.name, v)) |> Map.ofSeq
 
-let bfs valves start =
+let bfs valves (start: string) =
     let rec inner queue seen =
         if queue |> Seq.isEmpty then
             seen
         else
-            let (valve, cost) = queue |> Seq.head
+            let (valveName, cost) = queue |> Seq.head
+
+            let valve = valves |> Map.find valveName
 
             let (queue, seen) =
                 valve.neighbors
                 |> Seq.fold
                     (fun (queue, seen) cur ->
-                        let cur = valves |> Map.find cur
+                        let curValve = valves |> Map.find cur
 
                         if seen |> Map.containsKey cur then
                             (queue, seen)
@@ -59,24 +61,34 @@ let openingCost = 1
 
 let calculate valves start timeLength =
     let rec inner location time totalFlow valves =
-        let costsToOthers = bfs valves location
+        if time >= timeLength then
+            totalFlow
+        else
+            let costsToOthers = bfs valves location
 
-        let (nextLocation, flowAdded) =
-            costsToOthers
-            |> Map.toSeq
-            |> Seq.filter (fun (v, _) -> not v.isOpen)
-            |> Seq.map (fun (valve, stepsThere) ->
-                valve, valve.flowRate * (timeLength - (time + stepsThere + openingCost)))
-            |> Seq.sortDescending
-            |> Seq.head
+            let next =
+                costsToOthers
+                |> Map.toSeq
+                |> Seq.filter (fun (v, _) -> not (valves |> Map.find v).isOpen)
+                |> Seq.map (fun (valve, stepsThere) ->
+                    let valve = valves |> Map.find valve
+                    valve, valve.flowRate * (timeLength - (time + stepsThere + openingCost)))
+                |> Seq.sortDescending
+                |> Seq.tryHead
+                |> tee
 
-        inner
-            nextLocation
-            (time + (costsToOthers |> Map.find nextLocation) + openingCost)
-            (totalFlow + flowAdded)
-            (valves |> Map.add nextLocation.name { nextLocation with isOpen = true })
+            match next with
+            | None -> totalFlow
+            | Some(nextLocation, flowAdded) ->
+                let nextTime = time + (costsToOthers |> Map.find nextLocation.name) + openingCost
 
-    inner (valves |> Map.find start) 0 0 valves
+                inner
+                    nextLocation.name
+                    nextTime
+                    (totalFlow + if nextTime >= timeLength then 0 else flowAdded)
+                    (valves |> Map.add nextLocation.name { nextLocation with isOpen = true })
+
+    inner (valves |> Map.find start).name 0 0 valves
 
 
 let part1 input =
@@ -90,10 +102,10 @@ let tests =
         "parts"
         [
 
-          test "part 1" {
-              let subject = part1 Day16.data
-              Expect.equal subject 1 ""
-          }
+          //   test "part 1" {
+          //       let subject = part1 Day16.data
+          //       Expect.equal subject 1 ""
+          //   }
 
           test "sample" {
               let subject = part1 Day16.sample
