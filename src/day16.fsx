@@ -64,7 +64,7 @@ let calculate valves start timeLength =
         if time >= timeLength then
             totalFlow
         else
-            let costsToOthers = bfs valves location
+            let costsToOthers = tee (bfs valves location)
 
             let next =
                 costsToOthers
@@ -73,7 +73,7 @@ let calculate valves start timeLength =
                 |> Seq.map (fun (valve, stepsThere) ->
                     let valve = valves |> Map.find valve
                     valve, valve.flowRate * (timeLength - (time + stepsThere + openingCost)))
-                |> Seq.sortDescending
+                |> Seq.sortByDescending snd
                 |> Seq.tryHead
                 |> tee
 
