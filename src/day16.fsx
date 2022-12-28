@@ -189,10 +189,9 @@ let tests =
         "parts"
         [
 
-          //   test "part 1" {
-          //       let subject = part1 Day16.data
-          //       Expect.equal subject 1673 ""
-          //   }
+          test "part 1" { let subject = part1 Day16.data
+                          Expect.equal subject 1673 ""
+          }
 
           test "sample" {
               let subject = part1 Day16.sample
