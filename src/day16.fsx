@@ -59,7 +59,28 @@ let bfs valves (start: string) =
 
 let openingCost = 1
 
-let optimisticMaxFlow currentMax valves (timeSoFar, totalTime) =
+type Releaser =
+    | AwakenAt of int * string
+    | Done
+
+let releasedTime releaser =
+    match releaser with
+    | AwakenAt(time, _) -> Some time
+    | Done -> None
+
+let releasedLocation releaser =
+    match releaser with
+    | AwakenAt(_, loc) -> Some loc
+    | Done -> None
+
+let optimisticMaxFlow currentMax valves (timeSoFar, totalTime) (human, elephant) =
+    let remainingTaskFactor =
+        match human, elephant with
+        | AwakenAt _, AwakenAt _ -> 1
+        | AwakenAt _, Done
+        | Done, AwakenAt _ -> 2
+        | Done, Done -> 1000 // some large number since no more work will be done
+
     let valveValues =
         valves
         |> Seq.filter (fun valve -> not valve.isOpen)
@@ -70,20 +91,34 @@ let optimisticMaxFlow currentMax valves (timeSoFar, totalTime) =
             valve.flowRate * timeOpen)
 
     currentMax
-    + (valveValues |> Seq.take ((totalTime - timeSoFar - 1) / 2) |> Seq.sum)
+    + (valveValues
+       |> Seq.truncate ((totalTime - timeSoFar - 1) / remainingTaskFactor)
+       |> Seq.sum)
 
 let maxFlow valves start timeLength =
     let mutable currentMax = None
 
-    let rec inner (location, time, valves: Map<string, Valve>, totalFlow) =
-        if time >= timeLength then
+    // these releasers are in sorted order!
+    // if the first releaser is done, second releaser is also done!
+    let rec inner (releasers, valves: Map<string, Valve>, totalFlow) =
+        let human, elephant = releasers
+
+        if (human, elephant) = (Done, Done) then
+            totalFlow
+        else if (releasedTime human |> Option.get) >= timeLength then
             if currentMax |> Option.map (fun m -> totalFlow > m) |> Option.defaultValue true then
                 currentMax <- Some totalFlow
 
             totalFlow
         else if
             currentMax
-            |> Option.map (fun m -> optimisticMaxFlow totalFlow (valves |> Map.values) (time, timeLength) <= m)
+            |> Option.map (fun m ->
+                optimisticMaxFlow
+                    totalFlow
+                    (valves |> Map.values)
+                    (releasedTime human |> Option.get, timeLength)
+                    (human, elephant)
+                <= m)
             |> Option.defaultValue false
         then
             totalFlow
@@ -100,29 +135,44 @@ let maxFlow valves start timeLength =
                 totalFlow
             else
 
-                let costsToOthers: Map<string, int> = bfs valves location
+                let time = releasedTime human |> Option.get
+
+                let costsToOthers: Map<string, int> =
+                    bfs valves (releasedLocation human |> Option.get)
 
                 worthwhileDestinations
                 |> Seq.map (fun destination ->
                     let timeToDestination = costsToOthers |> Map.find destination.name
 
-                    let flowAdded =
-                        max 0 (destination.flowRate * (timeLength - timeToDestination - time - 1))
+                    let nextTimestamp = timeToDestination + time + 1
+                    let flowAdded = max 0 (destination.flowRate * (timeLength - nextTimestamp))
 
+                    let doneTotalFlow = totalFlow
                     let totalFlow = totalFlow + flowAdded
 
-                    innerFast (
-                        destination.name,
-                        time + (costsToOthers |> Map.find destination.name) + openingCost,
-                        valves |> Map.add destination.name { destination with isOpen = true },
-                        totalFlow
-                    ))
+                    let nextHuman = AwakenAt(nextTimestamp, destination.name)
+
+                    let nextReleasers =
+                        match elephant with
+                        | Done -> nextHuman, Done
+                        | AwakenAt(newerTime, _) when newerTime < nextTimestamp -> elephant, nextHuman
+                        | AwakenAt _ -> nextHuman, elephant
+
+                    let humanTakeFlowReleased =
+                        innerFast (
+                            nextReleasers,
+                            valves |> Map.add destination.name { destination with isOpen = true },
+                            totalFlow
+                        )
+
+                    let humanDone = innerFast ((snd nextReleasers, Done), valves, doneTotalFlow)
+                    max humanTakeFlowReleased humanDone)
                 |> Seq.max
 
     and innerFast = memoize inner
 
 
-    inner (start, 0, valves, 0)
+    inner ((AwakenAt(0, start), AwakenAt(0, start)), valves, 0)
 
 
 let calculate valves start timeLength = maxFlow valves start timeLength
@@ -132,21 +182,21 @@ let part1 input =
     let lines = parse input
     let valves = mapByName lines
 
-    calculate valves "AA" 30
+    calculate valves "AA" 26
 
 let tests =
     testList
         "parts"
         [
 
-          test "part 1" {
-              let subject = part1 Day16.data
-              Expect.equal subject 1673 ""
-          }
+          //   test "part 1" {
+          //       let subject = part1 Day16.data
+          //       Expect.equal subject 1673 ""
+          //   }
 
           test "sample" {
               let subject = part1 Day16.sample
-              Expect.equal subject 1651 ""
+              Expect.equal subject 1707 ""
           }
 
           ]
