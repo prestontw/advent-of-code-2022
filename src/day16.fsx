@@ -59,36 +59,73 @@ let bfs valves (start: string) =
 
 let openingCost = 1
 
-let calculate valves start timeLength =
-    let rec inner location time totalFlow valves =
+let optimisticMaxFlow currentMax valves (timeSoFar, totalTime) =
+    let valveValues =
+        valves
+        |> Seq.filter (fun valve -> not valve.isOpen)
+        |> Seq.sortByDescending (fun valve -> valve.flowRate)
+        |> Seq.indexed
+        |> Seq.map (fun (index, valve) ->
+            let timeOpen = max 0 ((totalTime - timeSoFar - (index + 1) * 2))
+            valve.flowRate * timeOpen)
+
+    currentMax
+    + (valveValues |> Seq.take ((totalTime - timeSoFar - 1) / 2) |> Seq.sum)
+
+let maxFlow valves start timeLength =
+    let mutable currentMax = None
+
+    let rec inner (location, time, valves: Map<string, Valve>, totalFlow) =
         if time >= timeLength then
+            if currentMax |> Option.map (fun m -> totalFlow > m) |> Option.defaultValue true then
+                currentMax <- Some totalFlow
+
+            totalFlow
+        else if
+            currentMax
+            |> Option.map (fun m -> optimisticMaxFlow totalFlow (valves |> Map.values) (time, timeLength) <= m)
+            |> Option.defaultValue false
+        then
             totalFlow
         else
-            let costsToOthers = tee (bfs valves location)
+            // pick next places to go, sorted by flow value
+            let worthwhileDestinations =
+                valves
+                |> Map.values
+                |> Seq.filter (fun v -> v.flowRate <> 0)
+                |> Seq.filter (fun v -> not v.isOpen)
+                |> Seq.sortByDescending (fun v -> v.flowRate)
 
-            let next =
-                costsToOthers
-                |> Map.toSeq
-                |> Seq.filter (fun (v, _) -> not (valves |> Map.find v).isOpen)
-                |> Seq.map (fun (valve, stepsThere) ->
-                    let valve = valves |> Map.find valve
-                    valve, valve.flowRate * (timeLength - (time + stepsThere + openingCost)))
-                |> Seq.sortByDescending snd
-                |> Seq.tryHead
-                |> tee
+            if worthwhileDestinations |> Seq.isEmpty then
+                totalFlow
+            else
 
-            match next with
-            | None -> totalFlow
-            | Some(nextLocation, flowAdded) ->
-                let nextTime = time + (costsToOthers |> Map.find nextLocation.name) + openingCost
+                let costsToOthers: Map<string, int> = bfs valves location
 
-                inner
-                    nextLocation.name
-                    nextTime
-                    (totalFlow + if nextTime >= timeLength then 0 else flowAdded)
-                    (valves |> Map.add nextLocation.name { nextLocation with isOpen = true })
+                worthwhileDestinations
+                |> Seq.map (fun destination ->
+                    let timeToDestination = costsToOthers |> Map.find destination.name
 
-    inner (valves |> Map.find start).name 0 0 valves
+                    let flowAdded =
+                        max 0 (destination.flowRate * (timeLength - timeToDestination - time - 1))
+
+                    let totalFlow = totalFlow + flowAdded
+
+                    innerFast (
+                        destination.name,
+                        time + (costsToOthers |> Map.find destination.name) + openingCost,
+                        valves |> Map.add destination.name { destination with isOpen = true },
+                        totalFlow
+                    ))
+                |> Seq.max
+
+    and innerFast = memoize inner
+
+
+    inner (start, 0, valves, 0)
+
+
+let calculate valves start timeLength = maxFlow valves start timeLength
 
 
 let part1 input =
