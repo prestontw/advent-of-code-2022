@@ -81,7 +81,7 @@ let start grid =
     |> Seq.filter (fun ((_x, y), c) -> y = 0 && c = Space)
     |> Seq.minBy (fun ((x, _y), _c) -> x)
 
-let getWrappedCell (x, y) dir grid =
+let getWrappedCell (x, y) dir faceLength grid =
     let filter, agg =
         match dir with
         | North -> (fun ((cX, _y), _c) -> x = cX), (fun s -> s |> Seq.maxBy (fun ((_x, y), _c) -> y))
@@ -89,7 +89,7 @@ let getWrappedCell (x, y) dir grid =
         | West -> (fun ((x, cy), c) -> cy = y), (fun s -> s |> Seq.maxBy (fun ((x, y), c) -> x))
         | East -> (fun ((x, cy), c) -> cy = y), (fun s -> s |> Seq.minBy (fun ((x, y), c) -> x))
 
-    grid |> Map.toSeq |> Seq.filter filter |> agg
+    (grid |> Map.toSeq |> Seq.filter filter |> agg), dir
 
 let delta dir =
     match dir with
@@ -98,33 +98,35 @@ let delta dir =
     | West -> (-1, 0)
     | East -> (1, 0)
 
-let getNeighborCell (x, y) dir grid =
+let getNeighborCell (x, y) dir faceLength grid =
     let (dx, dy) = delta dir
     let nextPos = (x + dx, y + dy)
 
     match grid |> Map.tryFind nextPos with
-    | Some c -> nextPos, c
+    | Some c -> (nextPos, c), dir
     | None ->
-        let wrapped = grid |> getWrappedCell (x, y) dir
-        wrapped
+        let wrapped, dir = grid |> getWrappedCell (x, y) dir faceLength
+        wrapped, dir
 
-let rec move grid instructions pos dir =
-    let rec inner pos amount =
+let rec move grid instructions pos dir faceLength =
+    let rec inner pos dir amount =
         if amount = 0 then
-            pos
+            pos, dir
         else
-            let nextPos, next = grid |> getNeighborCell pos dir
+            let ((nextPos, next), dir) = grid |> getNeighborCell pos dir faceLength
 
             match next with
-            | Space -> inner nextPos (amount - 1)
-            | Wall -> pos
+            | Space -> inner nextPos dir (amount - 1)
+            | Wall -> pos, dir
 
     match instructions with
     | [] -> pos, dir
     | i :: rest ->
         match i with
-        | Move amount -> move grid rest (inner pos amount) dir
-        | Face direction -> move grid rest pos (turn dir direction)
+        | Move amount ->
+            let pos, dir = inner pos dir amount
+            move grid rest pos dir faceLength
+        | Face direction -> move grid rest pos (turn dir direction) faceLength
 
 let facing dir =
     match dir with
@@ -133,12 +135,12 @@ let facing dir =
     | West -> 2
     | North -> 3
 
-let part1 input =
+let part1 input faceLength =
     let grid, instructions = parse input
     let startPos = grid |> start |> fst
     let startDir = East
 
-    let (x, y), orientation = move grid instructions startPos startDir
+    let (x, y), orientation = move grid instructions startPos startDir faceLength
 
     (1000 * (y + 1)) + ((x + 1) * 4) + facing orientation
 
@@ -148,13 +150,13 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day22.data
+              let subject = part1 Day22.data 50
               Expect.equal subject 1 ""
           }
 
           test "sample" {
-              let sampleOutput = part1 Day22.sample
-              Expect.equal sampleOutput 6032 ""
+              let sampleOutput = part1 Day22.sample 4
+              Expect.equal sampleOutput 5031 ""
           }
 
           ]
