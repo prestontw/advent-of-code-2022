@@ -102,6 +102,7 @@ let advance checkedDirections timestamp grid =
             dest)
         |> Map.ofSeq
 
+    actions,
     actions
     |> Seq.map (function
         | DoNothing(pos) -> (pos, Elf)
@@ -112,6 +113,22 @@ let advance checkedDirections timestamp grid =
                 dest, Elf)
     |> Map.ofSeq
 
+let finalGrid checkedDirections grid =
+    let rec inner grid timestamp =
+        let actions, grid = grid |> advance checkedDirections timestamp
+
+        if
+            actions
+            |> Seq.forall (function
+                | DoNothing _ -> true
+                | _ -> false)
+        then
+            timestamp
+        else
+            inner grid (timestamp + 1)
+
+    (inner grid 0) + 1
+
 let part1 input =
     let lines = parse input
     // n s w e
@@ -121,23 +138,8 @@ let part1 input =
           (W, [ W; SW; NW ])
           (E, [ E; NE; SE ]) ]
 
-    let finalGrid =
-        seq { 0..9 }
-        |> Seq.fold (fun grid timestamp -> grid |> advance checkedDirections timestamp) lines
+    lines |> finalGrid checkedDirections
 
-    // find smallest bounding box
-    let xs = finalGrid |> Map.toSeq |> Seq.map (fun ((x, y), c) -> x)
-    let ys = finalGrid |> Map.toSeq |> Seq.map (fun ((x, y), c) -> y)
-    let minX, maxX = xs |> Seq.min, xs |> Seq.max
-    let minY, maxY = ys |> Seq.min, ys |> Seq.max
-
-    Seq.allPairs (seq { minX..maxX }) (seq { minY..maxY })
-    |> Seq.filter (fun pos ->
-        finalGrid
-        |> Map.tryFind pos
-        |> Option.map (fun c -> c = Empty)
-        |> Option.defaultValue true)
-    |> Seq.length
 
 let tests =
     testList
@@ -146,13 +148,13 @@ let tests =
 
           test "sample" {
               let subject = part1 Day23.sample
-              Expect.equal subject 110 ""
+              Expect.equal subject 20 ""
           }
 
-          //   test "part 1" {
-          //       let subject = part1 Day23.data
-          //       Expect.equal subject 1 ""
-          //   }
+          test "part 1" {
+              let subject = part1 Day23.data
+              Expect.equal subject 1 ""
+          }
 
           ]
 
