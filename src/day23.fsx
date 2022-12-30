@@ -65,7 +65,9 @@ let neighborsAreEmpty neighbors =
 
 let checkThenMove pos directionsIfEmpty timestamp grid =
     if
-        tee (grid |> getNeighbors pos [ N; S; E; W; NE; NW; SE; SW ])
+        grid
+        |> getNeighbors pos [ N; S; E; W; NE; NW; SE; SW ]
+        |> Seq.toList
         |> neighborsAreEmpty
     then
         DoNothing pos
@@ -73,13 +75,15 @@ let checkThenMove pos directionsIfEmpty timestamp grid =
         let dirToMove =
             seq { 0 .. (directionsIfEmpty |> List.length) }
             |> Seq.map (fun i -> directionsIfEmpty[(i + timestamp) % (directionsIfEmpty |> List.length)])
-            |> Seq.find (fun (_dir, dirsToCheck) -> getNeighbors pos dirsToCheck grid |> neighborsAreEmpty)
-            |> fst
-            |> dirDiffs
+            |> Seq.tryFind (fun (_dir, dirsToCheck) -> getNeighbors pos dirsToCheck grid |> neighborsAreEmpty)
+            |> Option.map (fst >> dirDiffs)
 
-        let dx, dy = dirToMove
-        let x, y = pos
-        Move(source = pos, dest = (x + dx, y + dy))
+        match dirToMove with
+        | None -> DoNothing pos
+        | Some dirToMove ->
+            let dx, dy = dirToMove
+            let x, y = pos
+            Move(source = pos, dest = (x + dx, y + dy))
 
 let advance checkedDirections timestamp grid =
     let actions =
