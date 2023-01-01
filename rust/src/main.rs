@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+#[derive(Copy, Clone)]
 enum VentDirection {
     Left,
     Right,
@@ -119,7 +120,7 @@ fn part1(input: &str) -> usize {
             vertbar(max_height + 4),
             square(max_height + 4),
         ];
-        let mut shape = shapes[shape_index % shapes.len()];
+        let mut shape = shapes[shape_index % shapes.len()].clone();
         simulate(&fans, fan_index, shape, &mut corridor)
     });
 
@@ -135,7 +136,7 @@ fn fall(falling_rocks: &mut [(i16, usize)], stationary_rocks: &HashSet<(i16, usi
         return Falling::Landed;
     }
 
-    let next = falling_rocks.iter().map(|(x, y)| (*x, *y - 1));
+    let mut next = falling_rocks.iter().map(|(x, y)| (*x, *y - 1));
     if next.any(|pos| stationary_rocks.contains(&pos)) {
         return Falling::Landed;
     }
