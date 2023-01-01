@@ -109,8 +109,8 @@ fn part1(input: &str) -> usize {
     (0..1000000000000).fold(0, |fan_index, shape_index| {
         let max_height = corridor
             .iter()
-            .max_by_key(|(x, y)| y)
-            .map(|(x, y)| *y)
+            .max_by_key(|(_x, y)| y)
+            .map(|(_x, y)| *y)
             .unwrap_or(0);
 
         let shapes = vec![
@@ -120,11 +120,11 @@ fn part1(input: &str) -> usize {
             vertbar(max_height + 4),
             square(max_height + 4),
         ];
-        let mut shape = shapes[shape_index % shapes.len()].clone();
+        let shape = shapes[shape_index % shapes.len()].clone();
         simulate(&fans, fan_index, shape, &mut corridor)
     });
 
-    corridor.iter().max_by_key(|(x, y)| y).unwrap().1
+    corridor.iter().max_by_key(|(_x, y)| y).unwrap().1
 }
 enum Falling {
     StillFalling,
@@ -132,7 +132,7 @@ enum Falling {
 }
 
 fn fall(falling_rocks: &mut [(i16, usize)], stationary_rocks: &HashSet<(i16, usize)>) -> Falling {
-    if falling_rocks.iter().any(|(x, y)| *y == 1) {
+    if falling_rocks.iter().any(|(_x, y)| *y == 1) {
         return Falling::Landed;
     }
 
