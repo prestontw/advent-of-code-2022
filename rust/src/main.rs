@@ -106,7 +106,7 @@ fn part1(input: &str) -> usize {
     let fans = parse(input);
     let mut corridor = HashSet::new();
 
-    (0..2022).fold(0, |fan_index, shape_index| {
+    (0..1000000000000).fold(0, |fan_index, shape_index| {
         let max_height = corridor
             .iter()
             .max_by_key(|(x, y)| y)
@@ -150,5 +150,5 @@ fn main() {
 #[test]
 fn test_sample() {
     let input = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
-    assert_eq!(part1(input), 3068)
+    assert_eq!(part1(input), 1514285714288)
 }
