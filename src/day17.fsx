@@ -92,10 +92,10 @@ let simulate fans fanIndex falling stationary =
 let part1 input =
     let lines = parse input |> Seq.toList
 
-    let shapesLen = shapes |> List.length
+    let shapesLen = shapes |> List.length |> int64
 
     let (corridor, _fanIndex) =
-        seq { 0 .. (2022 - 1) }
+        seq { 0L .. (1_000_000_000_000L - 1L) }
         |> Seq.fold
             (fun (stationary, fanIndex) shapeIndex ->
                 let maxHeight =
@@ -104,7 +104,7 @@ let part1 input =
                     else
                         stationary |> Set.toSeq |> Seq.map snd |> Seq.max
 
-                let shape = shapes[shapeIndex % shapesLen](maxHeight + 4)
+                let shape = shapes[(shapeIndex % shapesLen) |> int](maxHeight + 4)
 
                 if shapeIndex <= 9 then
                     printfn "%A" shape
@@ -120,7 +120,7 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day17.sample
+              let subject = part1 Day17.data
               Expect.equal subject 3068 ""
           }
 
