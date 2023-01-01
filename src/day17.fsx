@@ -187,6 +187,10 @@ let tests =
         "parts"
         [
 
+          test "part 2" {
+              let subject = part1 Day17.data 1000000000000UL
+              Expect.equal subject 1514285714288UL ""
+          }
           test "part 1" {
               let subject = part1 Day17.sample 2022UL
               Expect.equal subject 3068UL ""
