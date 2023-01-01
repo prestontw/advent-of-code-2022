@@ -95,7 +95,7 @@ let part1 input =
     let shapesLen = shapes |> List.length |> int64
 
     let (corridor, _fanIndex) =
-        seq { 0L .. (1_000_000_000_000L - 1L) }
+        seq { 0L .. ((lines |> List.length) * (int shapesLen) |> int64) }
         |> Seq.fold
             (fun (stationary, fanIndex) shapeIndex ->
                 let maxHeight =
@@ -112,7 +112,7 @@ let part1 input =
                 simulate lines fanIndex shape stationary)
             ((Set []), 0)
 
-    corridor |> Set.toSeq |> Seq.map snd |> Seq.max
+    corridor, corridor |> Set.toSeq |> Seq.map snd |> Seq.max
 
 let tests =
     testList
@@ -121,7 +121,7 @@ let tests =
 
           test "part 1" {
               let subject = part1 Day17.data
-              Expect.equal subject 3068 ""
+              Expect.equal subject ((Set []), 3068) ""
           }
 
           ]
