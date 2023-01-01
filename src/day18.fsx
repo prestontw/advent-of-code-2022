@@ -25,13 +25,75 @@ let neighborCount pos cells =
 
 let visibleSides pos cells = 6 - (neighborCount pos cells)
 
+let exposedSides pos airCells = neighborCount pos airCells
+
+type Box =
+    { minx: int
+      maxx: int
+      miny: int
+      maxy: int
+      minz: int
+      maxz: int }
+
+let expand box =
+    { minx = box.minx - 1
+      maxx = box.maxx + 1
+      minz = box.minz - 1
+      maxz = box.maxz + 1
+      miny = box.miny - 1
+      maxy = box.maxy + 1 }
+
+let boundingBox cells =
+    let xs = cells |> Set.map (fun (x, y, z) -> x)
+    let ys = cells |> Set.map (fun (x, y, z) -> y)
+    let zs = cells |> Set.map (fun (x, y, z) -> z)
+
+    { minx = xs |> Set.minElement
+      maxx = xs |> Set.maxElement
+      miny = ys |> Set.minElement
+      maxy = ys |> Set.maxElement
+      minz = zs |> Set.minElement
+      maxz = zs |> Set.maxElement }
+
+let isWithin box (x, y, z) =
+    x >= box.minx
+    && x <= box.maxx
+    && y >= box.miny
+    && y <= box.maxy
+    && z >= box.minz
+    && z <= box.maxz
+
+// Return the cells outside of the parameter cells and within the box
+let surroundingCells box lavaCells =
+    let start = (box.minx, box.miny, box.minz)
+
+    let rec inner queue seen =
+        if queue |> Seq.isEmpty then
+            seen
+        else
+            let pos, rest = queue |> Seq.head, queue |> Seq.tail
+            let neighborPoss = neighborPositions pos
+
+            let neighbors =
+                neighborPoss
+                |> Seq.filter (isWithin box)
+                |> Seq.filter (fun pos -> not (seen |> Set.contains pos))
+                |> Seq.filter (fun pos -> not (lavaCells |> Set.contains pos))
+
+            inner (Seq.append rest neighbors) (neighbors |> Seq.fold (fun seen pos -> seen |> Set.add pos) seen)
+
+    inner (seq { start }) (Set [])
+
 
 let part1 input =
     let lines = parse input
 
     let cells = Set.ofSeq lines
+    let box = boundingBox cells |> expand
 
-    lines |> Seq.sumBy (fun pos -> visibleSides pos cells)
+    let surroundingCells = surroundingCells box cells
+
+    lines |> Seq.sumBy (fun pos -> exposedSides pos surroundingCells)
 
 let tests =
     testList
@@ -39,8 +101,8 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day18.data
-              Expect.equal subject 64 ""
+              let subject = part1 Day18.sample
+              Expect.equal subject 58 ""
           }
 
           ]
