@@ -89,7 +89,7 @@ let simulate fans fanIndex falling stationary =
 
     processFalling falling stationary fanIndex
 
-let cycleLength fans target =
+let cycleLength fans (target: uint64) =
     let shapesLength = shapes |> Seq.length
     let fansLength = fans |> Seq.length
 
@@ -118,11 +118,17 @@ let cycleLength fans target =
         | Some(times, numShapes, previousHeight) when times = 3 ->
             // fast forward as close to target as possible
             let cycleLength = nextShapeIndex - numShapes
-            let numberOfCycles = (target - nextShapeIndex) / cycleLength
+            let numberOfCycles = (target - (nextShapeIndex |> uint64)) / (cycleLength |> uint64)
             let heightDiff = maxHeight - previousHeight
-            let addedHeight = numberOfCycles * heightDiff
-            let nextShapeIndex = nextShapeIndex + (cycleLength * numberOfCycles)
-            stationary, addedHeight, nextShapeIndex, nextFanIndex
+            let addedHeight = numberOfCycles * (heightDiff |> uint64)
+
+            let nextShapeIndex =
+                (nextShapeIndex |> uint64) + ((cycleLength |> uint64) * numberOfCycles)
+
+            {| Stationary = stationary
+               AddedHeight = addedHeight
+               ShapeIndex = nextShapeIndex
+               FanIndex = nextFanIndex |}
         | Some(times, _, _) ->
             inner
                 (states
@@ -137,32 +143,44 @@ let cycleLength fans target =
 
     inner (Map []) 0 0 (Set []) 0
 
+let simulateMultiple fans target =
+    let shapesLen = shapes |> List.length |> uint64
 
-let part1 input =
+    let rec inner corridor shapeIndex fanIndex maxHeight =
+        if shapeIndex = target then
+            corridor
+        else
+            let shape = shapes[(shapeIndex % shapesLen) |> int](maxHeight + 4)
+
+            let corridor, fanIndex, falling = simulate fans fanIndex shape corridor
+
+            let maxHeight =
+                let maxFell = falling |> Seq.map snd |> Seq.max
+
+                corridor
+                |> Set.toSeq
+                |> Seq.filter (fun (x, y) -> y >= maxFell)
+                |> Seq.map snd
+                |> Seq.max
+
+            inner corridor (shapeIndex + 1UL) (fanIndex) maxHeight
+
+    let fastForwarded = cycleLength fans target
+
+    let final =
+        inner
+            fastForwarded.Stationary
+            fastForwarded.ShapeIndex
+            fastForwarded.FanIndex
+            (fastForwarded.Stationary |> Set.toSeq |> Seq.maxBy snd |> snd)
+
+    (final |> Set.toSeq |> Seq.maxBy snd |> snd |> uint64)
+    + fastForwarded.AddedHeight
+
+let part1 input target =
     let lines = parse input |> Seq.toList
 
-    let shapesLen = shapes |> List.length |> int64
-
-    let (corridor, _fanIndex) =
-        seq { 0L .. ((lines |> List.length) * (int shapesLen) |> int64) }
-        |> Seq.fold
-            (fun (stationary, fanIndex) shapeIndex ->
-                let maxHeight =
-                    if stationary |> Set.count = 0 then
-                        0
-                    else
-                        stationary |> Set.toSeq |> Seq.map snd |> Seq.max
-
-                let shape = shapes[(shapeIndex % shapesLen) |> int](maxHeight + 4)
-
-                if shapeIndex <= 9 then
-                    printfn "%A" shape
-
-                let a, b, _falling = simulate lines fanIndex shape stationary
-                a, b)
-            ((Set []), 0)
-
-    corridor |> Set.toSeq |> Seq.map snd |> Seq.max
+    simulateMultiple lines target
 
 let tests =
     testList
@@ -170,12 +188,10 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day17.data
-              Expect.equal subject 3068 ""
+              let subject = part1 Day17.sample 2022UL
+              Expect.equal subject 3068UL ""
           }
 
           ]
 
-// let main = runTestsWithCLIArgs [] [||] tests
-
-Day17.sample |> parse |> Seq.toList |> cycleLength
+let main = runTestsWithCLIArgs [] [||] tests
