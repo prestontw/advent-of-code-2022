@@ -104,7 +104,11 @@ let part1 input =
                     else
                         stationary |> Set.toSeq |> Seq.map snd |> Seq.max
 
-                let shape = shapes[shapeIndex % shapesLen]maxHeight
+                let shape = shapes[shapeIndex % shapesLen](maxHeight + 4)
+
+                if shapeIndex <= 9 then
+                    printfn "%A" shape
+
                 simulate lines fanIndex shape stationary)
             ((Set []), 0)
 
