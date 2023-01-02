@@ -13,17 +13,16 @@ let parse input =
 let part1 input =
     let lines = parse input
 
-    let duplicate (line: string) =
-        let half = (line.Length - 1) / 2
-        let first, second = line[0..half], line[half + 1 .. line.Length]
+    let duplicate (lines: string[]) =
+        lines
+        |> Seq.collect (Set.ofSeq >> Set.toSeq)
+        |> Seq.countBy id
+        |> Seq.find (fun (c, count) -> count = lines.Length)
+        |> fst
 
-        first
-        |> Set.ofSeq
-        |> Set.intersect (second |> Set.ofSeq)
-        |> Set.toList
-        |> List.head
 
     lines
+    |> Seq.chunkBySize 3
     |> Seq.map duplicate
     |> Seq.sumBy (fun duplicate ->
         if duplicate > 'Z' then
