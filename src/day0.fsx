@@ -25,11 +25,6 @@ let tests =
               Expect.equal subject 1 ""
           }
 
-          test "part 2" {
-              let subject = part1 Day0.data
-              Expect.equal subject 1 ""
-          }
-
           ]
 
 let main = runTestsWithCLIArgs [] [||] tests

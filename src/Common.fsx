@@ -50,6 +50,18 @@ let commas (i: string) = i.Split ','
 
 let spaces (i: string) = i.Split ' '
 
+let grid input =
+    let lines = input |> lines
+
+    let accLine acc line rowNum =
+        line
+        |> Seq.indexed
+        |> Seq.fold (fun acc (colNum, c) -> acc |> Map.add (colNum, rowNum) c) acc
+
+    lines
+    |> Seq.indexed
+    |> Seq.fold (fun acc (rowNum, line) -> accLine acc line rowNum) (Map [])
+
 let xor a b = (a && not b) || (not a && b)
 
 /// Memoize the function `f`.
@@ -89,3 +101,6 @@ let extractNamedValues regex str =
 let tee a =
     printfn "%A" a
     a
+
+let cardinalNeighbors (x, y) =
+    [ x + 1, y; x - 1, y; x, y - 1; x, y + 1 ]
