@@ -48,4 +48,8 @@ let tests =
 
           ]
 
-let main = runTestsWithCLIArgs [] [||] tests
+runTestsWithCLIArgs [] [||] tests
+|> if (System.Environment.GetEnvironmentVariable("CI")) |> isNull |> not then
+       exit
+   else
+       ignore
