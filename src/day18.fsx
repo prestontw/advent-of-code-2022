@@ -66,23 +66,25 @@ let isWithin box (x, y, z) =
 // Return the cells outside of the parameter cells and within the box
 let surroundingCells box lavaCells =
     let start = (box.minx, box.miny, box.minz)
+    // try this as a seq and see what happens! Weird!
+    let mutable queue = [ start ]
+    let mutable seen = Set.empty.Add start
 
-    let rec inner queue seen =
-        if queue |> Seq.isEmpty then
-            seen
-        else
-            let pos, rest = queue |> Seq.head, queue |> Seq.tail
-            let neighborPoss = neighborPositions pos
+    while queue |> Seq.isEmpty |> not do
+        let pos = queue |> Seq.head
+        queue <- queue |> List.tail
+        let neighborPoss = neighborPositions pos
 
-            let neighbors =
-                neighborPoss
-                |> Seq.filter (isWithin box)
-                |> Seq.filter (fun pos -> not (seen |> Set.contains pos))
-                |> Seq.filter (fun pos -> not (lavaCells |> Set.contains pos))
+        let neighbors =
+            neighborPoss
+            |> Seq.filter (isWithin box)
+            |> Seq.filter (fun pos -> not (seen |> Set.contains pos))
+            |> Seq.filter (fun pos -> not (lavaCells |> Set.contains pos))
 
-            inner (Seq.append rest neighbors) (neighbors |> Seq.fold (fun seen pos -> seen |> Set.add pos) seen)
+        queue <- List.append queue (neighbors |> Seq.toList)
+        seen <- neighbors |> Seq.fold (fun seen pos -> seen |> Set.add pos) seen
 
-    inner (seq { start }) (Set [])
+    seen
 
 
 let part1 input =
