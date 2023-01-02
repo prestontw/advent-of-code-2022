@@ -103,7 +103,7 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day18.sample
+              let subject = part1 Day18.data
               Expect.equal subject 58 ""
           }
 
