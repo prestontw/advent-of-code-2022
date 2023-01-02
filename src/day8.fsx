@@ -48,6 +48,26 @@ let incrementIfSome sq ownHeight num =
 
     if not blocked then num else num + 1UL
 
+let isVisible (x, y) grid =
+    let xs = grid |> Map.keys |> Seq.map fst
+    let xMin = xs |> Seq.min
+    let xMax = xs |> Seq.max
+    let ys = grid |> Map.keys |> Seq.map snd
+    let yMin = ys |> Seq.min
+    let yMax = ys |> Seq.max
+
+    let toTheLeft = posLeftUntil (x - 1, y) xMin |> gridValues grid |> Seq.tryMax
+    let toTheRight = posRightUntil (x + 1, y) xMax |> gridValues grid |> Seq.tryMax
+    let upwards = posUpUntil (x, y - 1) yMin |> gridValues grid |> Seq.tryMax
+    let downwards = posDownUntil (x, y + 1) yMax |> gridValues grid |> Seq.tryMax
+
+    let maxes = [| toTheLeft; toTheRight; upwards; downwards |]
+    let ownValue = grid |> Map.find (x, y)
+
+
+    maxes |> Seq.exists Option.isNone
+    || maxes |> Seq.exists (fun max -> max |> Option.get < ownValue)
+
 let visibleScore (x, y) grid =
     let xs = grid |> Map.keys |> Seq.map fst
     let xMin = xs |> Seq.min
@@ -99,8 +119,14 @@ let visibleScore (x, y) grid =
 let part1 input =
     let grid = parse input
 
-    let isVisible (x, y) = visibleScore (x, y) grid
-    grid |> Map.keys |> Seq.map isVisible |> Seq.max
+    let isVisible (x, y) = isVisible (x, y) grid
+    grid |> Map.keys |> Seq.filter isVisible |> Seq.length
+
+let part2 input =
+    let grid = parse input
+
+    let visibleScore (x, y) = visibleScore (x, y) grid
+    grid |> Map.keys |> Seq.map visibleScore |> Seq.max
 
 let tests =
     testList
@@ -109,24 +135,24 @@ let tests =
 
           test "part 1" {
               let subject = part1 Day8.data
-              Expect.equal subject (uint64 1672) ""
+              Expect.equal subject 1672 ""
           }
 
           test "sample" {
               let subject =
-                  part1
+                  part2
                       "30373
 25512
 65332
 33549
 35390"
 
-              Expect.equal subject (uint64 8) ""
+              Expect.equal subject 8UL ""
           }
 
           test "part 2" {
-              let subject = part1 Day8.data
-              Expect.equal subject (uint64 1) ""
+              let subject = part2 Day8.data
+              Expect.equal subject (uint64 327180) ""
           }
 
           ]
