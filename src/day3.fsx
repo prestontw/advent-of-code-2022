@@ -9,6 +9,14 @@ let parse input =
     let lines = input |> lines
     lines
 
+let scoreDuplicates duplicate items =
+    items
+    |> Seq.map duplicate
+    |> Seq.sumBy (fun duplicate ->
+        if duplicate > 'Z' then
+            int duplicate - (int 'a') + 1
+        else
+            int duplicate - (int 'A') + 27)
 
 let part1 input =
     let lines = parse input
@@ -23,13 +31,20 @@ let part1 input =
         |> Set.toList
         |> List.head
 
-    lines
-    |> Seq.map duplicate
-    |> Seq.sumBy (fun duplicate ->
-        if duplicate > 'Z' then
-            int duplicate - (int 'a') + 1
-        else
-            int duplicate - (int 'A') + 27)
+    lines |> scoreDuplicates duplicate
+
+let part2 input =
+    let lines = parse input
+
+    let duplicate (lines: string[]) =
+        lines
+        |> Seq.collect (Set.ofSeq >> Set.toSeq)
+        |> Seq.countBy id
+        |> Seq.find (fun (c, count) -> count = lines.Length)
+        |> fst
+
+
+    lines |> Seq.chunkBySize 3 |> scoreDuplicates duplicate
 
 let tests =
     testList
@@ -38,12 +53,12 @@ let tests =
 
           test "part 1" {
               let subject = part1 Day3.data
-              Expect.equal subject 1 ""
+              Expect.equal subject 8072 ""
           }
 
           test "part 2" {
-              let subject = part1 Day3.data
-              Expect.equal subject 1 ""
+              let subject = part2 Day3.data
+              Expect.equal subject 2567 ""
           }
 
           ]
