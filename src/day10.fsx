@@ -37,29 +37,30 @@ let part1 input =
     let ops = parse input
     let ops = ops |> Seq.collect opToCycle
 
-    let times = Set.empty.Add(20).Add(60).Add(100).Add(140).Add(180).Add(220)
+    let starting = Array.init (ops |> Seq.length) (fun _ -> '.')
 
-    let sum, _cycle, _x =
+    let display, _cycle, _x =
         ops
-        |> Seq.take 222
         |> Seq.fold
-            (fun (sum, cycle, x) cur ->
-                let sum =
-                    if times |> Set.contains cycle then
-                        tee (cycle, x) |> ignore
-                        sum + signalStrength x cycle
-                    else
-                        sum
+            (fun ((display: char array), cycle, x) cur ->
+
+
+                let withinX = (absDiff (cycle - 1) x) <= 1
+                display[cycle - 1] <- if withinX then '#' else '.'
+
+                if cycle <= 20 then
+                    printfn "%A -> %A" (cycle, x, cur) display[cycle - 1]
 
                 let x =
                     match cur with
                     | Noop -> x
                     | Add y -> x + y
 
-                (sum, cycle + 1, x))
-            (0, 1, 1)
+                (display, cycle + 1, x))
+            (starting, 1, 1)
 
-    sum
+    printfn "%A" (display |> Array.chunkBySize 40)
+    0
 
 let tests =
     testList
@@ -67,7 +68,7 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day10.data
+              let subject = part1 Day10.sample
               Expect.equal subject 13140 ""
           }
 
