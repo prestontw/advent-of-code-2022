@@ -43,13 +43,9 @@ let part1 input =
         ops
         |> Seq.fold
             (fun ((display: char array), cycle, x) cur ->
-
-
-                let withinX = (absDiff (cycle - 1) x) <= 1
+                let withinX = (absDiff ((cycle - 1) % 40) x) <= 1
                 display[cycle - 1] <- if withinX then '#' else '.'
 
-                if cycle <= 20 then
-                    printfn "%A -> %A" (cycle, x, cur) display[cycle - 1]
 
                 let x =
                     match cur with
@@ -59,7 +55,11 @@ let part1 input =
                 (display, cycle + 1, x))
             (starting, 1, 1)
 
-    printfn "%A" (display |> Array.chunkBySize 40)
+    display
+    |> Array.chunkBySize 40
+    |> Array.map (fun line -> line |> Seq.fold (fun acc c -> acc + string c) "")
+    |> printfn "%A"
+
     0
 
 let tests =
@@ -68,7 +68,7 @@ let tests =
         [
 
           test "part 1" {
-              let subject = part1 Day10.sample
+              let subject = part1 Day10.data
               Expect.equal subject 13140 ""
           }
 
