@@ -37,6 +37,32 @@ let part1 input =
     let ops = parse input
     let ops = ops |> Seq.collect opToCycle
 
+    let times = Set [ 20; 60; 100; 140; 180; 220 ]
+
+    let sum, _cycle, _x =
+        ops
+        |> Seq.fold
+            (fun (sum, cycle, x) cur ->
+                let sum =
+                    if times |> Set.contains cycle then
+                        sum + signalStrength x cycle
+                    else
+                        sum
+
+                let x =
+                    match cur with
+                    | Noop -> x
+                    | Add x' -> x + x'
+
+                sum, cycle + 1, x)
+            (0, 1, 1)
+
+    sum
+
+let part2 input =
+    let ops = parse input
+    let ops = ops |> Seq.collect opToCycle
+
     let starting = Array.init (ops |> Seq.length) (fun _ -> '.')
 
     let display, _cycle, _x =
@@ -58,9 +84,6 @@ let part1 input =
     display
     |> Array.chunkBySize 40
     |> Array.map (fun line -> line |> Seq.fold (fun acc c -> acc + string c) "")
-    |> printfn "%A"
-
-    0
 
 let tests =
     testList
@@ -69,9 +92,22 @@ let tests =
 
           test "part 1" {
               let subject = part1 Day10.data
-              Expect.equal subject 13140 ""
+              Expect.equal subject 14340 ""
+          }
+          test "part 2" {
+              let subject = part2 Day10.data
+
+              Expect.equal
+                  subject
+                  [| "###...##..###....##..##..###..#..#.###.."
+                     "#..#.#..#.#..#....#.#..#.#..#.#..#.#..#."
+                     "#..#.#..#.#..#....#.#....###..####.#..#."
+                     "###..####.###.....#.#....#..#.#..#.###.."
+                     "#....#..#.#....#..#.#..#.#..#.#..#.#...."
+                     "#....#..#.#.....##...##..###..#..#.#...." |]
+                  ""
           }
 
           ]
 
-let main = runTestsWithCLIArgs [] [||] tests
+runTestsWithCLIArgs [] [||] tests
