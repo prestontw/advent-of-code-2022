@@ -12,10 +12,22 @@ let counts (s: seq<'a>) : Map<'a, int> = Seq.countBy id s |> Map.ofSeq
 
 let split (s: string) (by: string) = s.Split by
 
-let digits (i: int) =
-    i |> string |> Seq.map (fun i -> int i - int '0')
+// Takes inputs like '1' and turns them to 1
+let charToInt (c: char) : int = int c - int '0'
+
+let digits (i: int) = i |> string |> Seq.map charToInt
 
 let lines (i: string) = i.Split '\n'
+
+module Seq =
+    let tryMax sq =
+        if sq |> Seq.isEmpty then None else sq |> Seq.max |> Some
+
+    let tryMaxBy by sq =
+        if sq |> Seq.isEmpty then
+            None
+        else
+            sq |> Seq.maxBy by |> Some
 
 /// This returns in reverse order
 let reversedBlankLines (i: string) =
@@ -37,6 +49,18 @@ let blankLines (i: string) = i.Split "\n\n" |> Seq.map lines
 let commas (i: string) = i.Split ','
 
 let spaces (i: string) = i.Split ' '
+
+let grid input =
+    let lines = input |> lines
+
+    let accLine acc line rowNum =
+        line
+        |> Seq.indexed
+        |> Seq.fold (fun acc (colNum, c) -> acc |> Map.add (colNum, rowNum) c) acc
+
+    lines
+    |> Seq.indexed
+    |> Seq.fold (fun acc (rowNum, line) -> accLine acc line rowNum) (Map [])
 
 let xor a b = (a && not b) || (not a && b)
 
@@ -77,3 +101,6 @@ let extractNamedValues regex str =
 let tee a =
     printfn "%A" a
     a
+
+let cardinalNeighbors (x, y) =
+    [ x + 1, y; x - 1, y; x, y - 1; x, y + 1 ]
