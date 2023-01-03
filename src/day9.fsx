@@ -66,8 +66,8 @@ let rec next (positions: (int * int) list) dir amount tailVisited =
         next (newHead :: tail) dir (amount - 1) (Set.add (tail |> List.last) tailVisited)
 
 
-let visited lines =
-    let initial = List.init 10 (fun _ -> (0, 0)), (Set [ 0, 0 ])
+let visited lines ropeLength =
+    let initial = List.init ropeLength (fun _ -> (0, 0)), (Set [ 0, 0 ])
 
     let folder =
         fun (positions, visited) (dir, amount) -> next positions dir amount visited
@@ -76,12 +76,15 @@ let visited lines =
 
     visited
 
-let part1 input =
+let part input ropeLength =
     let lines = parse input
 
-    let visited = visited lines
+    let visited = visited lines ropeLength
 
     Seq.length visited
+
+let part1 input = part input 2
+let part2 input = part input 10
 
 let tests =
     testList
@@ -95,7 +98,7 @@ let tests =
 
           test "sample 2" {
               let subject =
-                  part1
+                  part2
                       "R 5
 U 8
 L 8
@@ -106,6 +109,11 @@ L 25
 U 20"
 
               Expect.equal subject 36 ""
+          }
+
+          test "part 2" {
+              let outpu = part2 Day9.data
+              Expect.equal outpu 2678 ""
           }
 
           ]
